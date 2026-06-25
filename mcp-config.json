@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "aiops": {
+      "command": "node",
+      "args": ["/Users/<user>/Desktop/ai/kanban/mcp-server.mjs"]
+    }
+  }
+}

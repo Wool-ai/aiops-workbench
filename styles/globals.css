@@ -1,0 +1,60 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #070b12;
+  --surface: #0d1117;
+  --surface2: #111822;
+  --surface3: #17202e;
+  --surface4: #1e2a3e;
+  --border: #1c2638;
+  --border2: #243048;
+  --text: #dde6f5;
+  --text2: #b8b8b8;
+  --text3: #6878a0;
+  --accent: #2cb7d3;
+  --accent-hover: #2cb7d3;
+  --accent-glow: rgba(44, 183, 211, 0.18);
+  --accent-glow-strong: rgba(44, 183, 211, 0.35);
+  --todo-bg: rgba(64, 78, 104, 0.18);
+  --todo-c: #6878a0;
+  --inprog-bg: rgba(44, 183, 211, 0.1);
+  --inprog-c: #5acbff;
+  --review-bg: rgba(200, 140, 30, 0.1);
+  --review-c: #e7bf53;
+  --done-bg: rgba(20, 160, 90, 0.1);
+  --done-c: #3fcc7a;
+  --danger: #f07070;
+  --danger-border: #7a1f1f;
+  --radius: 15px;
+  --radius-sm: 10px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.3);
+  --shadow-lg: 0 16px 48px rgba(0,0,0,0.6), 0 6px 20px rgba(0,0,0,0.4);
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-size: 17px;
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input, textarea, select {
+  font-family: inherit;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+}

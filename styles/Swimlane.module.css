@@ -1,0 +1,547 @@
+.lane {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 30px;
+  width: 1000px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s;
+}
+
+.lane:hover {
+  border-color: var(--border2);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 25px;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+
+.header:hover {
+  background: var(--surface2);
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.name {
+  font-size: 17px;
+  font-weight: bold;
+  color: var(--text);
+  letter-spacing: 0.01em;
+}
+
+.count {
+  font-size: 12px;
+  color: var(--text3);
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.addTaskBtn {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.addTaskBtn:hover {
+  background: var(--accent-glow);
+  color: var(--accent-hover);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.chevron {
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s;
+}
+
+.header:hover .chevron {
+  color: var(--text2);
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.body {
+  display: flex;
+  gap: 1px;
+  padding: 0;
+  background: var(--border);
+}
+
+.col {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface2);
+  padding: 12px 10px;
+}
+
+.col:first-child {
+  border-bottom-left-radius: var(--radius);
+}
+
+.col:last-child {
+  border-bottom-right-radius: var(--radius);
+}
+
+.colHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding: 0 2px;
+}
+
+.colLabel {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.label_todo    { background: var(--todo-bg);    color: var(--todo-c); }
+.label_inprog  { background: var(--inprog-bg);  color: var(--inprog-c); }
+.label_review  { background: var(--review-bg);  color: var(--review-c); }
+.label_done    { background: var(--done-bg);    color: var(--done-c); }
+
+.colCount {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 48px;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s, outline-color 0.15s;
+}
+
+.cardsOver {
+  background: var(--accent-glow);
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.emptyColBtn {
+  width: 100%;
+  background: transparent;
+  border: 1px dashed var(--border2);
+  color: var(--text2);
+  border-radius: var(--radius-sm);
+  padding: 18px 8px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  min-height: 68px;
+  cursor: pointer;
+}
+
+.emptyColBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
+  border-style: solid;
+}
+
+.emptyColNoMatch {
+  font-size: 12px;
+  color: var(--text3);
+  text-align: center;
+  padding: 18px 8px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  min-height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.addCardBtn {
+  width: 100%;
+  margin-top: 8px;
+  background: transparent;
+  border: 1px dashed var(--border2);
+  color: var(--text3);
+  border-radius: var(--radius-sm);
+  padding: 7px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.addCardBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
+  border-style: solid;
+}
+
+.collapsedSummary {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-left: 4px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.collapsedCount {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.collapsedCount_todo   { background: var(--todo-bg);   color: var(--todo-c); }
+.collapsedCount_inprog { background: var(--inprog-bg); color: var(--inprog-c); }
+.collapsedCount_review { background: var(--review-bg); color: var(--review-c); }
+.collapsedCount_done   { background: var(--done-bg);   color: var(--done-c); }
+
+/* ── In-column bucket groups (status view) ─────── */
+
+.colBucketGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.colBucketGroup + .colBucketGroup {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.colBucketLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text3);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 0 2px 3px;
+}
+
+/* ── View toggle ────────────────────────────────── */
+
+.viewToggle {
+  display: flex;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.viewBtn {
+  background: transparent;
+  border: none;
+  color: var(--text3);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.viewBtn:hover {
+  color: var(--text2);
+  background: var(--surface2);
+}
+
+.viewBtnActive {
+  background: var(--surface3);
+  color: var(--text);
+}
+
+/* ── Bucket view ────────────────────────────────── */
+
+.bucketBody {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bucketSection {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.bucketHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.bucketLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.bucketCount {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.bucketHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.bucketAddBtn {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  border-radius: var(--radius-sm);
+  padding: 3px 9px;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.bucketAddBtn:hover {
+  background: var(--accent-glow);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.bucketRemoveBtn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text3);
+  border-radius: var(--radius-sm);
+  padding: 3px 7px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.bucketRemoveBtn:hover {
+  color: var(--danger);
+  border-color: var(--danger-border);
+  background: rgba(240,112,112,0.06);
+}
+
+.bucketRemoveConfirm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--danger);
+}
+
+.bucketConfirmYes {
+  background: rgba(240,112,112,0.12);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
+  border-radius: var(--radius-sm);
+  padding: 2px 9px;
+  font-size: 11px;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+
+.bucketConfirmYes:hover {
+  background: rgba(240,112,112,0.22);
+}
+
+.bucketConfirmNo {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  border-radius: var(--radius-sm);
+  padding: 2px 9px;
+  font-size: 11px;
+  transition: background 0.15s;
+}
+
+.bucketConfirmNo:hover {
+  background: var(--surface2);
+}
+
+.bucketCards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px;
+  min-height: 52px;
+}
+
+.bucketEmpty {
+  font-size: 12px;
+  color: var(--text3);
+  padding: 6px 2px;
+  align-self: center;
+}
+
+.bucketEmptyBtn {
+  width: 100%;
+  background: transparent;
+  border: 1px dashed var(--border2);
+  color: var(--text2);
+  border-radius: var(--radius-sm);
+  padding: 14px 8px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  cursor: pointer;
+}
+
+.bucketEmptyBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
+  border-style: solid;
+}
+
+.addBucketTrigger {
+  background: transparent;
+  border: 1px dashed var(--border2);
+  color: var(--text3);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  align-self: flex-start;
+}
+
+.addBucketTrigger:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
+  border-style: solid;
+}
+
+.addBucketForm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.addBucketInput {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 7px 11px;
+  font-size: 13px;
+  color: var(--text);
+  min-width: 180px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.addBucketInput:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.addBucketInput::placeholder {
+  color: var(--text3);
+}
+
+.addBucketSave {
+  background: var(--accent);
+  border: none;
+  color: #000;
+  border-radius: var(--radius-sm);
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+
+.addBucketSave:hover {
+  background: var(--accent-hover);
+}
+
+.addBucketCancel {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  border-radius: var(--radius-sm);
+  padding: 7px 12px;
+  font-size: 12px;
+  transition: background 0.15s;
+}
+
+.addBucketCancel:hover {
+  background: var(--surface2);
+}
