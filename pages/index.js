@@ -354,7 +354,17 @@ export default function Home() {
       const res = await fetch('/api/ai-process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task, projectId: notif.projectId, projectName: notif.projectName, bucket: notif.bucket, approvedTools }),
+        body: JSON.stringify({
+          task,
+          projectId: notif.projectId,
+          projectName: notif.projectName,
+          bucket: notif.bucket,
+          approvedContext: {
+            previousMessage: notif.message,
+            deniedOperations: notif.deniedOperations || [],
+            approvedTools,
+          },
+        }),
       });
       const newNotif = await res.json();
       setNotifications(prev => [newNotif, ...prev.filter(n => n.id !== tempId)]);

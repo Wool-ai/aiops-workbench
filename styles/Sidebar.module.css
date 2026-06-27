@@ -38,6 +38,7 @@
   gap: 2px;
   width: 100%;
   padding: 0 8px;
+  flex: 1;
 }
 
 .navBtn {
@@ -97,4 +98,34 @@
 .badgeDanger {
   background: #ef4444;
   color: #fff;
+}
+
+.themePicker {
+  margin-top: auto;
+  padding: 12px 0 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+
+.themeSwatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s;
+  outline: none;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+.themeSwatch:hover {
+  transform: scale(1.15);
+}
+
+.themeSwatchActive {
+  border-color: var(--accent);
+  transform: scale(1.12);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }

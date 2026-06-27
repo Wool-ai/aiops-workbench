@@ -6,6 +6,12 @@ const CLAUDE_BIN = process.env.CLAUDE_PATH || '/opt/homebrew/bin/claude';
 const LOG_DIR = '/Users/<user>/Desktop/ai/ai-logs';
 const TIMEOUT_MS = 300_000;
 
+// Tools pre-authorized on every run — Claude won't prompt for these
+const DEFAULT_ALLOWED_TOOLS = [
+  'Bash', 'Read', 'Write', 'Edit', 'Glob', 'Grep', 'LS',
+  'WebFetch', 'WebSearch', 'TodoWrite', 'TodoRead',
+];
+
 const SIMULATED = {
   completed: [
     "I've analyzed this task thoroughly and drafted a complete implementation plan. The key steps involve auditing current state, applying targeted changes, and validating against acceptance criteria. Everything looks achievable without additional blockers.",
@@ -120,7 +126,7 @@ function extractStructured(text) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { task, projectId, projectName, bucket, replyContext, approvedTools } = req.body;
+  const { task, projectId, projectName, bucket, replyContext, approvedContext } = req.body;
 
   const notifId = 'n' + Date.now() + Math.random().toString(36).slice(2, 6);
   const logFile = notifId + '.log';
@@ -136,11 +142,13 @@ export default async function handler(req, res) {
   writeLine(logStream, `Task:      "${task.name}"`);
   writeLine(logStream, `Project:   ${projectName}${bucket ? ' › ' + bucket : ''}`);
   writeLine(logStream, `Timestamp: ${timestamp}`);
-  writeLine(logStream, replyContext ? `Mode:      Human reply` : `Mode:      Initial analysis`);
+  const mode = replyContext ? 'Human reply' : approvedContext ? 'Approved retry' : 'Initial analysis';
+  writeLine(logStream, `Mode:      ${mode}`);
   writeLine(logStream);
 
-  const prompt = replyContext
-    ? `You are an AI assistant in AIOps Workbench. You previously worked on a task and asked the human a question. They have now replied — continue and complete the work.
+  let prompt;
+  if (replyContext) {
+    prompt = `You are an AI assistant in AIOps Workbench. You previously worked on a task and asked the human a question. They have now replied — continue and complete the work.
 
 Task: "${task.name}"
 Your previous message: "${replyContext.previousMessage}"
@@ -149,8 +157,33 @@ Human reply: "${replyContext.reply}"
 Use your tools (Bash, Write, Read, Edit, etc.) to carry out whatever the human's reply enables. Do the actual work now.
 
 When done, write a single JSON line as your final output — nothing else after it:
-{"type":"completed","message":"What you did"} or {"type":"issue","message":"What went wrong"} or {"type":"human_input","message":"What you still need"}`
-    : `You are an AI assistant in AIOps Workbench. You have been assigned a task to complete.
+{"type":"completed","message":"What you did"} or {"type":"issue","message":"What went wrong"} or {"type":"human_input","message":"What you still need"}`;
+  } else if (approvedContext) {
+    const { previousMessage, deniedOperations, approvedTools } = approvedContext;
+    const blockedSummary = deniedOperations.map(op => {
+      const inputStr = JSON.stringify(op.input || {}).slice(0, 200);
+      return `  - ${op.tool}: ${inputStr}`;
+    }).join('\n');
+    prompt = `You are an AI assistant in AIOps Workbench. You were previously working on a task but some tool uses were blocked by the permission system. The user has now approved those tools — resume and complete the work without starting over.
+
+Project: ${projectName}
+Work Bucket: ${bucket || 'Uncategorized'}
+Task: "${task.name}"
+${task.desc ? `Description: "${task.desc}"` : ''}
+
+Previously blocked operations (now approved):
+${blockedSummary || '  (see approved tools list)'}
+
+Approved tools: ${approvedTools.join(', ')}
+
+Your previous progress/status: "${previousMessage}"
+
+Continue from where you left off. Do NOT repeat work you already completed. Use the now-approved tools (${approvedTools.join(', ')}) along with Bash, Write, Read, Edit, and any other tools you need to finish the task.
+
+After completing the work (or if you hit a new blocker), write a single JSON line as your final output — nothing else after it:
+{"type":"completed","message":"Brief summary of what you did"} or {"type":"issue","message":"What blocked you"} or {"type":"human_input","message":"What decision or info you need"}`;
+  } else {
+    prompt = `You are an AI assistant in AIOps Workbench. You have been assigned a task to complete.
 
 Project: ${projectName}
 Work Bucket: ${bucket || 'Uncategorized'}
@@ -162,6 +195,7 @@ USE YOUR TOOLS to complete this task now. Write files, run commands, read code �
 
 After completing the work (or if you hit a blocker or need input), write a single JSON line as your final output — nothing else after it:
 {"type":"completed","message":"Brief summary of what you did"} or {"type":"issue","message":"What blocked you"} or {"type":"human_input","message":"What decision or info you need"}`;
+  }
 
   writeLine(logStream, '=== PROMPT ===');
   writeLine(logStream, prompt);
@@ -170,13 +204,13 @@ After completing the work (or if you hit a blocker or need input), write a singl
   let type, message, deniedOperations = [];
   let simulated = false;
 
-  if (approvedTools && approvedTools.length > 0) {
-    writeLine(logStream, `Approved tools: ${approvedTools.join(', ')}`);
-    writeLine(logStream);
-  }
+  const approvedTools = approvedContext?.approvedTools || [];
+  const allAllowedTools = [...new Set([...DEFAULT_ALLOWED_TOOLS, ...approvedTools])];
+  writeLine(logStream, `Allowed tools: ${allAllowedTools.join(', ')}`);
+  writeLine(logStream);
 
   try {
-    const { text: raw, permissionDenials } = await runClaude(prompt, logStream, approvedTools || []);
+    const { text: raw, permissionDenials } = await runClaude(prompt, logStream, allAllowedTools);
 
     // Permission denials take priority over whatever Claude reported
     if (permissionDenials.length > 0) {
@@ -221,6 +255,17 @@ After completing the work (or if you hit a blocker or need input), write a singl
 
   logStream.end();
 
+  let thread = [];
+  if (replyContext) {
+    thread = [{ from: 'human', text: replyContext.reply }, { from: 'ai', text: message }];
+  } else if (approvedContext) {
+    const toolNames = approvedContext.approvedTools.join(', ');
+    thread = [
+      { from: 'human', text: `Approved ${toolNames} — resuming task` },
+      { from: 'ai', text: message },
+    ];
+  }
+
   res.status(200).json({
     id: notifId,
     type,
@@ -234,8 +279,6 @@ After completing the work (or if you hit a blocker or need input), write a singl
     timestamp,
     read: false,
     logFile,
-    thread: replyContext
-      ? [{ from: 'human', text: replyContext.reply }, { from: 'ai', text: message }]
-      : [],
+    thread,
   });
 }

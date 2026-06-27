@@ -1,4 +1,12 @@
+import { useState, useEffect } from 'react';
 import styles from '../styles/Sidebar.module.css';
+
+const THEMES = [
+  { id: 'blue',  label: 'Blue',       swatch: 'linear-gradient(135deg, #070b12 50%, #2cb7d3 50%)' },
+  { id: 'green', label: 'Green',      swatch: 'linear-gradient(135deg, #070b12 50%, #4fffb0 50%)' },
+  { id: 'dark',  label: 'Pure Dark',  swatch: 'linear-gradient(135deg, #050507 50%, #9898b8 50%)' },
+  { id: 'white', label: 'Light',      swatch: 'linear-gradient(135deg, #eef1f7 50%, #2563eb 50%)' },
+];
 
 const VIEWS = [
   {
@@ -78,6 +86,19 @@ const VIEWS = [
 ];
 
 export default function Sidebar({ activeView, onViewChange, queueUnread = 0, remindersOverdue = 0 }) {
+  const [activeTheme, setActiveTheme] = useState('blue');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('aiops-theme') || 'blue';
+    setActiveTheme(saved);
+  }, []);
+
+  function applyTheme(id) {
+    setActiveTheme(id);
+    localStorage.setItem('aiops-theme', id);
+    document.documentElement.dataset.theme = id;
+  }
+
   return (
     <nav className={styles.sidebar}>
       <div className={styles.logoMark}>
@@ -107,8 +128,19 @@ export default function Sidebar({ activeView, onViewChange, queueUnread = 0, rem
                 <span className={`${styles.badge} ${styles.badgeDanger}`}>{remindersOverdue > 9 ? '9+' : remindersOverdue}</span>
               )}
             </span>
-            {/* <span className={styles.navLabel}>{v.label}</span> */}
           </button>
+        ))}
+      </div>
+
+      <div className={styles.themePicker}>
+        {THEMES.map(t => (
+          <button
+            key={t.id}
+            className={`${styles.themeSwatch} ${activeTheme === t.id ? styles.themeSwatchActive : ''}`}
+            style={{ background: t.swatch }}
+            onClick={() => applyTheme(t.id)}
+            title={t.label}
+          />
         ))}
       </div>
     </nav>
