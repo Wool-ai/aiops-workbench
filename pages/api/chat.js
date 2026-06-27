@@ -3,7 +3,7 @@ import path from 'path';
 
 const CLAUDE_BIN   = process.env.CLAUDE_PATH || '/opt/homebrew/bin/claude';
 const MCP_CONFIG   = path.join(process.cwd(), 'mcp-config.json');
-const TIMEOUT_MS   = 90_000;
+const TIMEOUT_MS   = 300_000;
 
 // All MCP tools the assistant is allowed to call — no file-system tools in chat.
 const ALLOWED_TOOLS = [

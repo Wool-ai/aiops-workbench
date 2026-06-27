@@ -4,7 +4,7 @@ import path from 'path';
 
 const CLAUDE_BIN = process.env.CLAUDE_PATH || '/opt/homebrew/bin/claude';
 const LOG_DIR = '/Users/<user>/Desktop/ai/ai-logs';
-const TIMEOUT_MS = 120_000;
+const TIMEOUT_MS = 300_000;
 
 const SIMULATED = {
   completed: [
