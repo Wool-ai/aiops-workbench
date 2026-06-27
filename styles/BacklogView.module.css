@@ -53,6 +53,32 @@
   font-variant-numeric: tabular-nums;
 }
 
+.groupActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.workspaceBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text3);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.workspaceBtn:hover {
+  color: var(--text2);
+  background: var(--surface3);
+  border-color: var(--border2);
+}
+
 .addTaskBtn {
   background: transparent;
   border: 1px solid var(--border2);
@@ -357,18 +383,42 @@
 .bucketHeader {
   display: flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 9px 20px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  text-align: left;
+  padding: 0 12px 0 0;
   transition: background 0.12s;
 }
 
 .bucketHeader:hover {
   background: var(--surface2);
+}
+
+.bucketToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  padding: 9px 8px 9px 20px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  min-width: 0;
+}
+
+.bucketWorkspaceBtn {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--text3);
+  padding: 5px 6px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+
+.bucketWorkspaceBtn:hover {
+  color: var(--accent);
+  background: var(--accent-glow);
 }
 
 .bucketChevron {

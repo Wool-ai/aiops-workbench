@@ -91,35 +91,44 @@ function PriorityChip({ priority }) {
 
 /* ── Bucket section (collapsible) ─────────────── */
 
-function BucketSection({ label, tasks, projectId, onTaskClick, onStatusChange, isUncategorized }) {
+function BucketSection({ label, tasks, projectId, onTaskClick, onStatusChange, isUncategorized, onOpenWorkspace }) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
     <div className={styles.bucketSection}>
-      <button
-        className={styles.bucketHeader}
-        onClick={() => setCollapsed(c => !c)}
-        aria-expanded={!collapsed}
-      >
-        <svg
-          className={`${styles.bucketChevron} ${collapsed ? styles.bucketChevronCollapsed : ''}`}
-          width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+      <div className={styles.bucketHeader}>
+        <button
+          className={styles.bucketToggle}
+          onClick={() => setCollapsed(c => !c)}
+          aria-expanded={!collapsed}
         >
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
-        {isUncategorized ? (
-          <span className={styles.bucketNameMuted}>{label}</span>
-        ) : (
-          <>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={styles.bucketIcon}>
-              <path d="M22 12H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+          <svg
+            className={`${styles.bucketChevron} ${collapsed ? styles.bucketChevronCollapsed : ''}`}
+            width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          >
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+          {isUncategorized ? (
+            <span className={styles.bucketNameMuted}>{label}</span>
+          ) : (
+            <>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={styles.bucketIcon}>
+                <path d="M22 12H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+              </svg>
+              <span className={styles.bucketName}>{label}</span>
+            </>
+          )}
+          <span className={styles.bucketCount}>{tasks.length}</span>
+          <div className={styles.bucketRule} />
+        </button>
+        {!isUncategorized && onOpenWorkspace && (
+          <button className={styles.bucketWorkspaceBtn} onClick={() => onOpenWorkspace(label)} title={`Workspace: ${label}`}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
             </svg>
-            <span className={styles.bucketName}>{label}</span>
-          </>
+          </button>
         )}
-        <span className={styles.bucketCount}>{tasks.length}</span>
-        <div className={styles.bucketRule} />
-      </button>
+      </div>
 
       {!collapsed && (
         <div className={styles.bucketTasks}>
@@ -226,7 +235,7 @@ function groupByBucket(buckets, tasks) {
   return groups;
 }
 
-export default function BacklogView({ displayProjects, projects, onTaskClick, onAddTask, onStatusChange, onAddBucket, isFiltered }) {
+export default function BacklogView({ displayProjects, projects, onTaskClick, onAddTask, onStatusChange, onAddBucket, isFiltered, onOpenWorkspace }) {
   const anyTasks = displayProjects.some(p => p.tasks.length > 0);
 
   if (!anyTasks) {
@@ -254,12 +263,22 @@ export default function BacklogView({ displayProjects, projects, onTaskClick, on
                 <span className={styles.groupName}>{project.name}</span>
                 <span className={styles.groupCount}>{tasks.length} task{tasks.length !== 1 ? 's' : ''}</span>
               </div>
-              {!isFiltered && (
-                <button className={styles.addTaskBtn} onClick={() => onAddTask(project.id)}>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  Add task
-                </button>
-              )}
+              <div className={styles.groupActions}>
+                {onOpenWorkspace && (
+                  <button className={styles.workspaceBtn} onClick={() => onOpenWorkspace(project, null)} title="Project Workspace">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Workspace
+                  </button>
+                )}
+                {!isFiltered && (
+                  <button className={styles.addTaskBtn} onClick={() => onAddTask(project.id)}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Add task
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Body */}
@@ -291,6 +310,7 @@ export default function BacklogView({ displayProjects, projects, onTaskClick, on
                     onTaskClick={onTaskClick}
                     onStatusChange={onStatusChange}
                     isUncategorized={isUncategorized}
+                    onOpenWorkspace={onOpenWorkspace ? (bucketName) => onOpenWorkspace(project, bucketName) : null}
                   />
                 ))}
                 {!isFiltered && (

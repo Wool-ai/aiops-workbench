@@ -112,7 +112,7 @@ function ToolInputSummary({ tool, input }) {
   return <span className={styles.opDetail}>{JSON.stringify(input).slice(0, 120)}</span>;
 }
 
-function NotifCard({ notif, onMarkRead, onDismiss, onReply, onApproveRetry }) {
+function NotifCard({ notif, onMarkRead, onDismiss, onReply, onApproveRetry, onOpenTask }) {
   const [replyText, setReplyText] = useState('');
   const [replying, setReplying] = useState(false);
   const [approving, setApproving] = useState(false);
@@ -254,6 +254,14 @@ function NotifCard({ notif, onMarkRead, onDismiss, onReply, onApproveRetry }) {
               Mark as read
             </button>
           )}
+          {onOpenTask && notif.taskId && notif.projectId !== 'daily' && (
+            <button className={styles.openTaskBtn} onClick={() => onOpenTask(notif.taskId, notif.projectId)}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+              </svg>
+              Open Task
+            </button>
+          )}
           <button className={styles.dismissBtn} onClick={() => onDismiss(notif.id)}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -266,7 +274,7 @@ function NotifCard({ notif, onMarkRead, onDismiss, onReply, onApproveRetry }) {
   );
 }
 
-export default function QueueView({ notifications, onMarkRead, onDismiss, onReply, onApproveRetry }) {
+export default function QueueView({ notifications, onMarkRead, onDismiss, onReply, onApproveRetry, onOpenTask }) {
   const [filter, setFilter] = useState('all');
 
   const visible = notifications.filter(n =>
@@ -325,6 +333,7 @@ export default function QueueView({ notifications, onMarkRead, onDismiss, onRepl
               onDismiss={onDismiss}
               onReply={onReply}
               onApproveRetry={onApproveRetry}
+              onOpenTask={onOpenTask}
             />
           ))}
         </div>

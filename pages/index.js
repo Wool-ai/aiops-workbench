@@ -8,6 +8,7 @@ import QueueView from '../components/QueueView';
 import DailyView from '../components/DailyView';
 import RemindersView from '../components/RemindersView';
 import ChatBot from '../components/ChatBot';
+import WorkspaceModal from '../components/WorkspaceModal';
 import DashboardView from '../components/DashboardView';
 import { ASSIGNEES, uid } from '../lib/data';
 import styles from '../styles/Home.module.css';
@@ -60,6 +61,7 @@ export default function Home() {
   const [reminders, setReminders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTask, setActiveTask] = useState(null);
+  const [workspaceTarget, setWorkspaceTarget] = useState(null); // { project, bucketName? }
   const [showNewProject, setShowNewProject] = useState(false);
   const [activeView, setActiveView] = useState('dashboard');
   const [search, setSearch] = useState('');
@@ -308,6 +310,43 @@ export default function Home() {
     setShowNewProject(false);
   }, []);
 
+  const applyAIResult = useCallback((notif) => {
+    if (notif.projectId === 'daily' || !notif.taskId) return;
+    if (notif.type === 'processing') return;
+
+    const aiComment = {
+      author: 'AI',
+      text: notif.message,
+      time: new Date(notif.timestamp).toLocaleString(),
+      aiNotifId: notif.id,
+      resultType: notif.type,
+    };
+    const newCol = notif.type === 'completed' ? 'done' : null;
+
+    setProjects(prev => prev.map(p => {
+      if (p.id !== notif.projectId) return p;
+      return {
+        ...p,
+        tasks: p.tasks.map(t => {
+          if (t.id !== notif.taskId) return t;
+          return { ...t, col: newCol || t.col, comments: [...(t.comments || []), aiComment] };
+        }),
+      };
+    }));
+
+    setActiveTask(prev => {
+      if (!prev || prev.task.id !== notif.taskId) return prev;
+      return {
+        ...prev,
+        task: {
+          ...prev.task,
+          col: newCol || prev.task.col,
+          comments: [...(prev.task.comments || []), aiComment],
+        },
+      };
+    });
+  }, []);
+
   const runWithAI = useCallback(async (task, projectId) => {
     const project = projects.find(p => p.id === projectId);
     if (!project) return;
@@ -333,13 +372,14 @@ export default function Home() {
       });
       const notif = await res.json();
       setNotifications(prev => [notif, ...prev.filter(n => n.id !== tempId)]);
+      applyAIResult(notif);
       setActiveView('queue');
     } catch {
       setNotifications(prev => prev.map(n =>
         n.id === tempId ? { ...n, type: 'issue', message: 'AI processing failed. Please try again.' } : n
       ));
     }
-  }, [projects]);
+  }, [projects, applyAIResult]);
 
   const approveAndRetry = useCallback(async (notif) => {
     const project = projects.find(p => p.id === notif.projectId);
@@ -368,10 +408,11 @@ export default function Home() {
       });
       const newNotif = await res.json();
       setNotifications(prev => [newNotif, ...prev.filter(n => n.id !== tempId)]);
+      applyAIResult(newNotif);
     } catch {
       setNotifications(prev => prev.filter(n => n.id !== tempId));
     }
-  }, [projects]);
+  }, [projects, applyAIResult]);
 
   const markNotifRead = useCallback((id) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
@@ -394,10 +435,11 @@ export default function Home() {
       });
       const newNotif = await res.json();
       setNotifications(prev => [newNotif, ...prev.filter(n => n.id !== tempId)]);
+      applyAIResult(newNotif);
     } catch {
       setNotifications(prev => prev.filter(n => n.id !== tempId));
     }
-  }, [projects]);
+  }, [projects, applyAIResult]);
 
   const activeProject = activeTask
     ? projects.find(p => p.id === activeTask.projectId)
@@ -570,6 +612,11 @@ export default function Home() {
             onDismiss={dismissNotif}
             onReply={replyToNotif}
             onApproveRetry={approveAndRetry}
+            onOpenTask={(taskId, projectId) => {
+              const project = projects.find(p => p.id === projectId);
+              const task = project?.tasks.find(t => t.id === taskId);
+              if (task) openTask(task, projectId);
+            }}
           />
         ) : activeView === 'backlog' ? (
           <BacklogView
@@ -580,6 +627,7 @@ export default function Home() {
             onStatusChange={updateTaskStatus}
             onAddBucket={addBucket}
             isFiltered={isFiltered}
+            onOpenWorkspace={(project, bucketName) => setWorkspaceTarget({ project, bucketName })}
           />
         ) : projects.length === 0 ? (
           <div className={styles.empty}>
@@ -601,6 +649,7 @@ export default function Home() {
                 onMoveTask={(taskId, newCol) => moveTask(project.id, taskId, newCol)}
                 onAddBucket={(name) => addBucket(project.id, name)}
                 onRemoveBucket={(name) => removeBucket(project.id, name)}
+                onOpenWorkspace={(proj, bucketName) => setWorkspaceTarget({ project: proj, bucketName })}
               />
             );
           })
@@ -618,6 +667,8 @@ export default function Home() {
             onDelete={deleteTask}
             onClose={() => setActiveTask(null)}
             onRunWithAI={(task) => runWithAI(task, activeTask.projectId)}
+            onGoToQueue={() => { setActiveTask(null); setActiveView('queue'); }}
+            onOpenWorkspace={(bucketName) => setWorkspaceTarget({ project: activeProject, bucketName })}
           />
         </>
       )}
@@ -626,6 +677,14 @@ export default function Home() {
         <NewProjectModal
           onSave={createProject}
           onClose={() => setShowNewProject(false)}
+        />
+      )}
+
+      {workspaceTarget && (
+        <WorkspaceModal
+          project={workspaceTarget.project}
+          bucketName={workspaceTarget.bucketName}
+          onClose={() => setWorkspaceTarget(null)}
         />
       )}
       </div>

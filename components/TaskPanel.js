@@ -3,7 +3,7 @@ import Avatar from './Avatar';
 import { COLUMN_LABELS, COLUMNS, ASSIGNEES, PRIORITY_ORDER, PRIORITY_META } from '../lib/data';
 import styles from '../styles/TaskPanel.module.css';
 
-export default function TaskPanel({ task, projectName, projectBuckets, onSave, onDelete, onClose, onRunWithAI }) {
+export default function TaskPanel({ task, projectName, projectBuckets, onSave, onDelete, onClose, onRunWithAI, onGoToQueue, onOpenWorkspace }) {
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
   const [assignee, setAssignee] = useState('');
@@ -33,6 +33,13 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
     }
     setTimeout(() => nameRef.current?.focus(), 60);
   }, [task?.id]);
+
+  // Sync status and comments when AI updates the task externally
+  useEffect(() => {
+    if (!task) return;
+    setCol(task.col || 'todo');
+    setComments(task.comments || []);
+  }, [task?.col, task?.comments?.length]);
 
   useEffect(() => {
     function onKey(e) {
@@ -150,10 +157,25 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
         {projectBuckets && projectBuckets.length > 0 && (
           <div className={styles.field}>
             <label className={styles.label}>Work Bucket</label>
-            <select className={styles.select} value={bucket} onChange={e => setBucket(e.target.value)}>
-              <option value="">No bucket</option>
-              {projectBuckets.map(b => <option key={b} value={b}>{b}</option>)}
-            </select>
+            <div className={styles.bucketRow}>
+              <select className={styles.select} value={bucket} onChange={e => setBucket(e.target.value)}>
+                <option value="">No bucket</option>
+                {projectBuckets.map(b => <option key={b} value={b}>{b}</option>)}
+              </select>
+              {bucket && onOpenWorkspace && (
+                <button
+                  type="button"
+                  className={styles.bucketWorkspaceBtn}
+                  onClick={() => onOpenWorkspace(bucket)}
+                  title={`Open workspace for "${bucket}"`}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  Workspace
+                </button>
+              )}
+            </div>
           </div>
         )}
 
@@ -201,18 +223,47 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
             {comments.length === 0 ? (
               <p className={styles.noComments}>No comments yet.</p>
             ) : (
-              comments.map((c, i) => (
-                <div key={i} className={styles.comment}>
-                  <Avatar name={c.author} size={24} />
-                  <div className={styles.commentBody}>
-                    <div className={styles.commentMeta}>
-                      <span className={styles.commentAuthor}>{c.author}</span>
-                      <span className={styles.commentTime}>{c.time}</span>
+              comments.map((c, i) => {
+                if (c.author === 'AI') {
+                  return (
+                    <div key={i} className={styles.aiComment}>
+                      <div className={styles.aiCommentHeader}>
+                        <div className={styles.aiCommentMeta}>
+                          <span className={styles.aiCommentLabel}>AI</span>
+                          {c.resultType && (
+                            <span className={`${styles.aiCommentStatus} ${styles['aiCommentStatus_' + c.resultType]}`}>
+                              {c.resultType === 'human_input' ? 'needs input' : c.resultType === 'permission_required' ? 'permission' : c.resultType}
+                            </span>
+                          )}
+                        </div>
+                        <span className={styles.aiCommentTime}>{c.time}</span>
+                        {c.aiNotifId && onGoToQueue && (
+                          <button className={styles.aiCommentQueueBtn} onClick={onGoToQueue}>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+                              <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+                            </svg>
+                            View in Queue
+                          </button>
+                        )}
+                      </div>
+                      <div className={styles.aiCommentText}>{c.text}</div>
                     </div>
-                    <div className={styles.commentText}>{c.text}</div>
+                  );
+                }
+                return (
+                  <div key={i} className={styles.comment}>
+                    <Avatar name={c.author} size={24} />
+                    <div className={styles.commentBody}>
+                      <div className={styles.commentMeta}>
+                        <span className={styles.commentAuthor}>{c.author}</span>
+                        <span className={styles.commentTime}>{c.time}</span>
+                      </div>
+                      <div className={styles.commentText}>{c.text}</div>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 

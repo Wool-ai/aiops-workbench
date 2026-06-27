@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DndContext, PointerSensor, useSensor, useSensors, closestCenter, useDroppable } from '@dnd-kit/core';
+import { DndContext, PointerSensor, useSensor, useSensors, rectIntersection, useDroppable } from '@dnd-kit/core';
 import TaskCard from './TaskCard';
 import { COLUMNS, COLUMN_LABELS } from '../lib/data';
 import styles from '../styles/Swimlane.module.css';
@@ -13,7 +13,7 @@ function DroppableColWrapper({ col, children }) {
   );
 }
 
-function BucketSection({ bucketName, tasks, isFiltered, isUncategorized, onTaskClick, onAddTask, onRemoveBucket }) {
+function BucketSection({ bucketName, tasks, isFiltered, isUncategorized, onTaskClick, onAddTask, onRemoveBucket, onOpenWorkspace }) {
   const [confirmRemove, setConfirmRemove] = useState(false);
   const label = isUncategorized ? 'Uncategorized' : bucketName;
 
@@ -23,6 +23,13 @@ function BucketSection({ bucketName, tasks, isFiltered, isUncategorized, onTaskC
         <span className={styles.bucketLabel}>{label}</span>
         <span className={styles.bucketCount}>{tasks.length}</span>
         <div className={styles.bucketHeaderRight}>
+          {!isUncategorized && onOpenWorkspace && (
+            <button className={styles.bucketWorkspaceBtn} onClick={() => onOpenWorkspace(bucketName)} title="Bucket workspace">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+              </svg>
+            </button>
+          )}
           {!isUncategorized && (
             confirmRemove ? (
               <span className={styles.bucketRemoveConfirm}>
@@ -109,7 +116,7 @@ function AddBucketRow({ onAdd }) {
   );
 }
 
-export default function Swimlane({ project, displayTasks, isFiltered, onToggle, onTaskClick, onAddTask, onMoveTask, onAddBucket, onRemoveBucket }) {
+export default function Swimlane({ project, displayTasks, isFiltered, onToggle, onTaskClick, onAddTask, onMoveTask, onAddBucket, onRemoveBucket, onOpenWorkspace }) {
   const [viewMode, setViewMode] = useState('status');
 
   const sensors = useSensors(
@@ -156,6 +163,7 @@ export default function Swimlane({ project, displayTasks, isFiltered, onToggle, 
               onTaskClick={onTaskClick}
               onAddTask={onAddTask}
               onRemoveBucket={onRemoveBucket}
+              onOpenWorkspace={onOpenWorkspace ? (bn) => onOpenWorkspace(project, bn) : null}
             />
           );
         })}
@@ -208,6 +216,14 @@ export default function Swimlane({ project, displayTasks, isFiltered, onToggle, 
               </button>
             </div>
           )}
+          {onOpenWorkspace && (
+            <button className={styles.workspaceBtn} onClick={() => onOpenWorkspace(project, null)} title="Project Workspace">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+              </svg>
+              Workspace
+            </button>
+          )}
           <button className={styles.addTaskBtn} onClick={() => onAddTask(null)}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add task
@@ -221,7 +237,7 @@ export default function Swimlane({ project, displayTasks, isFiltered, onToggle, 
       {project.open && viewMode === 'bucket' && renderBucketView()}
 
       {project.open && viewMode === 'status' && (
-        <DndContext sensors={sensors} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
+        <DndContext sensors={sensors} onDragEnd={handleDragEnd} collisionDetection={rectIntersection}>
           <div className={styles.body}>
             {COLUMNS.map(col => {
               const tasks = tasksToShow.filter(t => t.col === col);
@@ -256,7 +272,20 @@ export default function Swimlane({ project, displayTasks, isFiltered, onToggle, 
                   <>
                     {buckets.map(b => grouped[b].length === 0 ? null : (
                       <div key={b} className={styles.colBucketGroup}>
-                        <div className={styles.colBucketLabel}>{b}</div>
+                        <div className={styles.colBucketLabel}>
+                          <span>{b}</span>
+                          {onOpenWorkspace && (
+                            <button
+                              className={styles.colBucketWorkspaceBtn}
+                              onClick={() => onOpenWorkspace(project, b)}
+                              title={`Workspace: ${b}`}
+                            >
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                              </svg>
+                            </button>
+                          )}
+                        </div>
                         {grouped[b].map(task => (
                           <TaskCard key={task.id} task={task} col={col} onClick={() => onTaskClick(task)} />
                         ))}

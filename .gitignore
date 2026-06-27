@@ -1,3 +1,5 @@
 .next
 node_modules
 data.json
+workspace/**
+!workspace/README.md

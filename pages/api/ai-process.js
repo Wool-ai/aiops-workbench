@@ -5,6 +5,48 @@ import path from 'path';
 const CLAUDE_BIN = process.env.CLAUDE_PATH || '/opt/homebrew/bin/claude';
 const LOG_DIR = '/Users/<user>/Desktop/ai/ai-logs';
 const TIMEOUT_MS = 300_000;
+const WORKSPACE_ROOT = path.join(process.cwd(), 'workspace');
+
+function slugify(name) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+function readWorkspaceDir(dir, label) {
+  if (!fs.existsSync(dir)) return null;
+  const instructionsPath = path.join(dir, 'instructions.md');
+  const instructions = fs.existsSync(instructionsPath)
+    ? fs.readFileSync(instructionsPath, 'utf8').trim()
+    : null;
+  const otherFiles = fs.readdirSync(dir)
+    .filter(f => f !== 'instructions.md' && f !== 'buckets' && !f.startsWith('.'));
+  if (!instructions && otherFiles.length === 0) return null;
+  let ctx = `\n--- ${label} ---`;
+  if (instructions) ctx += `\nInstructions:\n${instructions}`;
+  if (otherFiles.length > 0) {
+    ctx += `\nReference files (use Read tool as needed):\n`;
+    ctx += otherFiles.map(f => `  ${path.join(dir, f)}`).join('\n');
+  }
+  ctx += `\n--- End ${label} ---`;
+  return ctx;
+}
+
+function loadWorkspaceContext(projectId, bucketName) {
+  if (!projectId || projectId === 'daily') return null;
+  const safeProject = projectId.replace(/[^a-zA-Z0-9_-]/g, '');
+  const projectDir = path.join(WORKSPACE_ROOT, safeProject);
+
+  const parts = [];
+  const projectCtx = readWorkspaceDir(projectDir, 'Project Workspace');
+  if (projectCtx) parts.push(projectCtx);
+
+  if (bucketName) {
+    const bucketDir = path.join(projectDir, 'buckets', slugify(bucketName));
+    const bucketCtx = readWorkspaceDir(bucketDir, `Bucket Workspace: ${bucketName}`);
+    if (bucketCtx) parts.push(bucketCtx);
+  }
+
+  return parts.length > 0 ? '\n' + parts.join('\n') + '\n' : null;
+}
 
 // Tools pre-authorized on every run — Claude won't prompt for these
 const DEFAULT_ALLOWED_TOOLS = [
@@ -183,6 +225,7 @@ Continue from where you left off. Do NOT repeat work you already completed. Use 
 After completing the work (or if you hit a new blocker), write a single JSON line as your final output — nothing else after it:
 {"type":"completed","message":"Brief summary of what you did"} or {"type":"issue","message":"What blocked you"} or {"type":"human_input","message":"What decision or info you need"}`;
   } else {
+    const workspaceCtx = loadWorkspaceContext(projectId, bucket);
     prompt = `You are an AI assistant in AIOps Workbench. You have been assigned a task to complete.
 
 Project: ${projectName}
@@ -190,7 +233,7 @@ Work Bucket: ${bucket || 'Uncategorized'}
 Task: "${task.name}"
 ${task.desc ? `Description: "${task.desc}"` : ''}
 Current status: ${task.col}
-
+${workspaceCtx || ''}
 USE YOUR TOOLS to complete this task now. Write files, run commands, read code — do the actual work using Bash, Write, Read, Edit and any other tools available to you. Do not just describe what you would do.
 
 After completing the work (or if you hit a blocker or need input), write a single JSON line as your final output — nothing else after it:

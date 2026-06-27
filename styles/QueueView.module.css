@@ -515,6 +515,23 @@
   background: rgba(240, 112, 112, 0.06);
 }
 
+.openTaskBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s, background 0.15s;
+}
+
+.openTaskBtn:hover {
+  background: var(--accent-glow);
+}
+
 /* ── Empty state ─────────────────────────────── */
 
 .empty {

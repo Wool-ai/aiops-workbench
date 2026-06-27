@@ -163,6 +163,38 @@
   gap: 8px;
 }
 
+.bucketRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bucketRow .select {
+  flex: 1;
+}
+
+.bucketWorkspaceBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--text3);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 7px 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.bucketWorkspaceBtn:hover {
+  color: var(--accent);
+  background: var(--accent-glow);
+  border-color: var(--accent-glow-strong);
+}
+
 /* ── Priority segmented control ──────────────── */
 
 .priorityRow {
@@ -311,6 +343,82 @@
   font-size: 13px;
   color: var(--text2);
   line-height: 1.5;
+}
+
+.aiComment {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.aiCommentHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.aiCommentMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.aiCommentLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.aiCommentStatus {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: capitalize;
+}
+
+.aiCommentStatus_completed { background: var(--done-bg); color: var(--done-c); }
+.aiCommentStatus_issue     { background: rgba(240,112,112,0.12); color: var(--danger); }
+.aiCommentStatus_human_input { background: var(--review-bg); color: var(--review-c); }
+.aiCommentStatus_permission_required { background: var(--inprog-bg); color: var(--inprog-c); }
+
+.aiCommentTime {
+  font-size: 11px;
+  color: var(--text3);
+  margin-left: auto;
+}
+
+.aiCommentText {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+
+.aiCommentQueueBtn {
+  font-size: 11px;
+  background: none;
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  color: var(--accent);
+  padding: 3px 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+
+.aiCommentQueueBtn:hover {
+  background: var(--accent-glow);
 }
 
 .commentInputRow {
