@@ -532,7 +532,7 @@
 .addBucketSave {
   background: var(--accent);
   border: none;
-  color: #000;
+  color: var(--btn-primary-text);
   border-radius: var(--radius-sm);
   padding: 5px 12px;
   font-size: 12px;

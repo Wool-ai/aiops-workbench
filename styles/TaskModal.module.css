@@ -231,7 +231,7 @@
 .sendBtn {
   background: var(--accent);
   border: none;
-  color: #000;
+  color: var(--btn-primary-text);
   border-radius: var(--radius-sm);
   padding: 7px 14px;
   font-size: 13px;
@@ -295,7 +295,7 @@
 .saveBtn {
   background: var(--accent);
   border: none;
-  color: #000;
+  color: var(--btn-primary-text);
   border-radius: var(--radius-sm);
   padding: 7px 16px;
   font-size: 13px;

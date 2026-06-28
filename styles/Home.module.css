@@ -121,7 +121,7 @@
 .newProjectBtn {
   background: var(--accent);
   border: none;
-  color: #000;
+  color: var(--btn-primary-text);
   border-radius: var(--radius-sm);
   padding: 7px 14px;
   font-size: 13px;
@@ -153,6 +153,16 @@
 .mainQueue {
   padding: 24px 32px;
   max-width: 820px;
+}
+
+.mainScheduled {
+  padding: 0;
+  max-width: none;
+  width: 100%;
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .mainDaily {

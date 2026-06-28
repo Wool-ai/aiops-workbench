@@ -27,7 +27,7 @@
   gap: 6px;
   background: var(--accent);
   border: none;
-  color: #000;
+  color: var(--btn-primary-text);
   border-radius: var(--radius-sm);
   padding: 6px 14px;
   font-size: 12px;
@@ -81,8 +81,8 @@
 }
 
 .badgeOverdue {
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
+  background: rgba(240, 112, 112, 0.15);
+  color: var(--danger);
 }
 
 /* ── List ────────────────────────────────────────────────────────────────── */
@@ -113,7 +113,7 @@
 }
 
 .cardOverdue {
-  border-left: 3px solid #ef4444;
+  border-left: 3px solid var(--danger);
 }
 
 /* Checkbox */
@@ -137,15 +137,15 @@
 .checkDone {
   background: var(--done-c);
   border-color: var(--done-c);
-  color: #000;
+  color: var(--btn-primary-text);
 }
 
 .checkOverdue {
-  border-color: #ef4444;
+  border-color: var(--danger);
 }
 
 .checkOverdue:hover {
-  background: rgba(239, 68, 68, 0.15);
+  background: var(--danger-glow);
 }
 
 /* Card body */
@@ -190,9 +190,9 @@
 }
 
 .dateChipOverdue {
-  color: #f87171;
-  background: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.25);
+  color: var(--danger);
+  background: var(--danger-glow);
+  border-color: var(--danger-border);
 }
 
 .projectChip {
@@ -230,8 +230,8 @@
 .card:hover .deleteBtn { opacity: 1; }
 
 .deleteBtn:hover {
-  color: #f87171;
-  background: rgba(239, 68, 68, 0.08);
+  color: var(--danger);
+  background: var(--danger-glow);
 }
 
 /* ── Empty state ─────────────────────────────────────────────────────────── */
@@ -360,15 +360,15 @@
 
 .delBtn {
   background: transparent;
-  border: 1px solid rgba(239,68,68,0.3);
-  color: #f87171;
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
   border-radius: var(--radius-sm);
   padding: 6px 14px;
   font-size: 12px;
   transition: background 0.15s;
 }
 
-.delBtn:hover { background: rgba(239,68,68,0.08); }
+.delBtn:hover { background: var(--danger-glow); }
 
 .cancelBtn {
   background: transparent;
@@ -385,7 +385,7 @@
 .saveBtn {
   background: var(--accent);
   border: none;
-  color: #000;
+  color: var(--btn-primary-text);
   border-radius: var(--radius-sm);
   padding: 6px 18px;
   font-size: 12px;

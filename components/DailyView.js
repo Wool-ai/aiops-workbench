@@ -209,6 +209,10 @@ export default function DailyView({ dailyTasks = [], onSave, onDelete, onToggleD
   }, []);
 
   useEffect(() => {
+    scrolledRef.current = false;
+  }, [date]);
+
+  useEffect(() => {
     if (scrolledRef.current || !gridRef.current) return;
     const px = calcNow();
     if (px !== null) {

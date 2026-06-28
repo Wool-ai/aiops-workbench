@@ -472,7 +472,7 @@
 
 .barFillToday {
   background: var(--accent);
-  box-shadow: 0 0 10px rgba(44, 183, 211, 0.45);
+  box-shadow: 0 0 10px var(--accent-glow-strong);
 }
 
 .barAxis {
@@ -807,6 +807,6 @@
 .dailyChecked {
   background: var(--done-c);
   border-color: var(--done-c);
-  color: #000;
+  color: var(--btn-primary-text);
 }
 

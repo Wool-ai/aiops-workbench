@@ -248,8 +248,9 @@ export default function BacklogView({ displayProjects, projects, onTaskClick, on
 
   return (
     <div className={styles.backlog}>
-      {displayProjects.map((displayProject, i) => {
-        const project = projects[i];
+      {displayProjects.map((displayProject) => {
+        const project = projects.find(p => p.id === displayProject.id);
+        if (!project) return null;
         const tasks = displayProject.tasks;
         const hasBuckets = project.buckets && project.buckets.length > 0;
         const bucketGroups = hasBuckets ? groupByBucket(project.buckets, tasks) : null;

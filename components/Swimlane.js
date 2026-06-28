@@ -116,7 +116,7 @@ function AddBucketRow({ onAdd }) {
   );
 }
 
-export default function Swimlane({ project, displayTasks, isFiltered, onToggle, onTaskClick, onAddTask, onMoveTask, onAddBucket, onRemoveBucket, onOpenWorkspace }) {
+export default function Swimlane({ project, displayTasks, isFiltered, onToggle, onTaskClick, onAddTask, onMoveTask, onAddBucket, onRemoveBucket, onOpenWorkspace, onRunAll }) {
   const [viewMode, setViewMode] = useState('status');
 
   const sensors = useSensors(
@@ -222,6 +222,14 @@ export default function Swimlane({ project, displayTasks, isFiltered, onToggle, 
                 <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
               </svg>
               Workspace
+            </button>
+          )}
+          {onRunAll && project.tasks.some(t => t.col === 'todo') && (
+            <button className={styles.runAllBtn} onClick={onRunAll} title="Run all todo tasks with AI">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+              Run all
             </button>
           )}
           <button className={styles.addTaskBtn} onClick={() => onAddTask(null)}>

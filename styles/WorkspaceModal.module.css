@@ -190,7 +190,7 @@
   align-items: center;
   gap: 6px;
   background: var(--accent);
-  color: #000;
+  color: var(--btn-primary-text);
   border: none;
   border-radius: var(--radius-sm);
   padding: 7px 16px;

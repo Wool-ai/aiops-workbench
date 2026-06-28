@@ -10,6 +10,7 @@ import RemindersView from '../components/RemindersView';
 import ChatBot from '../components/ChatBot';
 import WorkspaceModal from '../components/WorkspaceModal';
 import DashboardView from '../components/DashboardView';
+import ScheduledView from '../components/ScheduledView';
 import { ASSIGNEES, uid } from '../lib/data';
 import styles from '../styles/Home.module.css';
 
@@ -37,6 +38,10 @@ const VIEW_META = {
   reminders: {
     label: 'Reminders',
     icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+  },
+  scheduled: {
+    label: 'Scheduled',
+    icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><polyline points="8 14 11 17 16 12"/></svg>,
   },
 };
 
@@ -91,6 +96,71 @@ export default function Home() {
     }, 400);
     return () => clearTimeout(saveTimerRef.current);
   }, [projects, notifications, dailyTasks, reminders, isLoading]);
+
+  // Scheduler tick — poll every 60 s, dispatch due schedules via runWithAI
+  useEffect(() => {
+    async function tick() {
+      try {
+        const res = await fetch('/api/scheduler-tick', { method: 'POST' });
+        const { due } = await res.json();
+        if (due && due.length > 0) {
+          for (const s of due) {
+            const task = {
+              id: 'sched-' + s.id + '-' + Date.now(),
+              name: s.name,
+              desc: s.prompt,
+              col: 'todo',
+              bucket: '',
+            };
+            const projectId = s.projectId || 'scheduled';
+            const tempId = 'processing-' + Date.now() + Math.random();
+            setNotifications(prev => [{
+              id: tempId,
+              type: 'processing',
+              projectId,
+              projectName: s.projectName || 'Scheduled',
+              taskId: task.id,
+              taskName: s.name,
+              bucket: '',
+              message: '',
+              timestamp: new Date().toISOString(),
+              read: false,
+              thread: [],
+              scheduled: true,
+              scheduleId: s.id,
+            }, ...prev]);
+            fetch('/api/ai-process', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                task,
+                projectId,
+                projectName: s.projectName || 'Scheduled',
+                bucket: '',
+                allowedTools: s.allowedTools?.length ? s.allowedTools : undefined,
+              }),
+            })
+              .then(r => r.json())
+              .then(notif => {
+                setNotifications(prev => [
+                  { ...notif, scheduled: true, scheduleId: s.id },
+                  ...prev.filter(n => n.id !== tempId),
+                ]);
+                setActiveView(v => v === 'scheduled' ? 'queue' : v);
+              })
+              .catch(() => {
+                setNotifications(prev => prev.map(n =>
+                  n.id === tempId ? { ...n, type: 'issue', message: 'Scheduled task failed.' } : n
+                ));
+              });
+          }
+        }
+      } catch { /* network error, ignore */ }
+    }
+    tick();
+    const interval = setInterval(tick, 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   const totalTasks = projects.reduce((sum, p) => sum + p.tasks.length, 0);
   const doneTasks = projects.reduce((sum, p) => sum + p.tasks.filter(t => t.col === 'done').length, 0);
@@ -347,7 +417,7 @@ export default function Home() {
     });
   }, []);
 
-  const runWithAI = useCallback(async (task, projectId) => {
+  const runWithAI = useCallback(async (task, projectId, allowedTools) => {
     const project = projects.find(p => p.id === projectId);
     if (!project) return;
     const tempId = 'processing-' + Date.now();
@@ -368,7 +438,7 @@ export default function Home() {
       const res = await fetch('/api/ai-process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task, projectId, projectName: project.name, bucket: task.bucket || '' }),
+        body: JSON.stringify({ task, projectId, projectName: project.name, bucket: task.bucket || '', allowedTools: allowedTools?.length ? allowedTools : undefined }),
       });
       const notif = await res.json();
       setNotifications(prev => [notif, ...prev.filter(n => n.id !== tempId)]);
@@ -380,6 +450,23 @@ export default function Home() {
       ));
     }
   }, [projects, applyAIResult]);
+
+  const runAllWithAI = useCallback(async (projectId) => {
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return;
+    const pending = project.tasks.filter(t => t.col === 'todo');
+    if (pending.length === 0) return;
+    setActiveView('queue');
+    const CONCURRENCY = 3;
+    let i = 0;
+    async function next() {
+      if (i >= pending.length) return;
+      const task = pending[i++];
+      await runWithAI(task, projectId);
+      await next();
+    }
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, pending.length) }, next));
+  }, [projects, runWithAI]);
 
   const approveAndRetry = useCallback(async (notif) => {
     const project = projects.find(p => p.id === notif.projectId);
@@ -575,7 +662,7 @@ export default function Home() {
         )}
       </header>
 
-      <main className={`${styles.main} ${activeView === 'dashboard' ? styles.mainDashboard : (activeView === 'queue' || activeView === 'reminders') ? styles.mainQueue : activeView === 'daily' ? styles.mainDaily : ''}`}>
+      <main className={`${styles.main} ${activeView === 'dashboard' ? styles.mainDashboard : activeView === 'scheduled' ? styles.mainScheduled : (activeView === 'queue' || activeView === 'reminders') ? styles.mainQueue : activeView === 'daily' ? styles.mainDaily : ''}`}>
         {isLoading ? (
           <div className={styles.loadingState}>
             <div className={styles.loadingSpinner} />
@@ -604,6 +691,12 @@ export default function Home() {
             onDelete={deleteDailyTask}
             onToggleDone={toggleDailyTaskDone}
             onRunWithAI={runDailyTaskWithAI}
+          />
+        ) : activeView === 'scheduled' ? (
+          <ScheduledView
+            projects={projects}
+            notifications={notifications}
+            onApproveRetry={approveAndRetry}
           />
         ) : activeView === 'queue' ? (
           <QueueView
@@ -635,8 +728,9 @@ export default function Home() {
             <button className={styles.newProjectBtn} onClick={() => setShowNewProject(true)}>Create your first project</button>
           </div>
         ) : (
-          displayProjects.map((displayProject, i) => {
-            const project = projects[i];
+          displayProjects.map((displayProject) => {
+            const project = projects.find(p => p.id === displayProject.id);
+            if (!project) return null;
             return (
               <Swimlane
                 key={project.id}
@@ -650,6 +744,7 @@ export default function Home() {
                 onAddBucket={(name) => addBucket(project.id, name)}
                 onRemoveBucket={(name) => removeBucket(project.id, name)}
                 onOpenWorkspace={(proj, bucketName) => setWorkspaceTarget({ project: proj, bucketName })}
+                onRunAll={() => runAllWithAI(project.id)}
               />
             );
           })
@@ -666,7 +761,7 @@ export default function Home() {
             onSave={saveTask}
             onDelete={deleteTask}
             onClose={() => setActiveTask(null)}
-            onRunWithAI={(task) => runWithAI(task, activeTask.projectId)}
+            onRunWithAI={(task, allowedTools) => runWithAI(task, activeTask.projectId, allowedTools)}
             onGoToQueue={() => { setActiveTask(null); setActiveView('queue'); }}
             onOpenWorkspace={(bucketName) => setWorkspaceTarget({ project: activeProject, bucketName })}
           />

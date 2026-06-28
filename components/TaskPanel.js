@@ -3,6 +3,27 @@ import Avatar from './Avatar';
 import { COLUMN_LABELS, COLUMNS, ASSIGNEES, PRIORITY_ORDER, PRIORITY_META } from '../lib/data';
 import styles from '../styles/TaskPanel.module.css';
 
+const DEFAULT_TOOLS = [
+  'Bash', 'Read', 'Write', 'Edit', 'Glob', 'Grep', 'LS',
+  'WebFetch', 'WebSearch', 'TodoWrite', 'TodoRead',
+];
+
+const ALL_TOOLS = [
+  { name: 'Bash',         isDefault: true  },
+  { name: 'Read',         isDefault: true  },
+  { name: 'Write',        isDefault: true  },
+  { name: 'Edit',         isDefault: true  },
+  { name: 'Glob',         isDefault: true  },
+  { name: 'Grep',         isDefault: true  },
+  { name: 'LS',           isDefault: true  },
+  { name: 'WebFetch',     isDefault: true  },
+  { name: 'WebSearch',    isDefault: true  },
+  { name: 'TodoWrite',    isDefault: true  },
+  { name: 'TodoRead',     isDefault: true  },
+  { name: 'Agent',        isDefault: false },
+  { name: 'NotebookEdit', isDefault: false },
+];
+
 export default function TaskPanel({ task, projectName, projectBuckets, onSave, onDelete, onClose, onRunWithAI, onGoToQueue, onOpenWorkspace }) {
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
@@ -16,6 +37,9 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
   const [commentInput, setCommentInput] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [aiQueued, setAiQueued] = useState(false);
+  const [showToolConfig, setShowToolConfig] = useState(false);
+  const [allowedTools, setAllowedTools] = useState([...DEFAULT_TOOLS]);
+  const [customToolInput, setCustomToolInput] = useState('');
   const nameRef = useRef(null);
 
   useEffect(() => {
@@ -30,16 +54,21 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
       setPriority(task.priority || 'medium');
       setComments(task.comments || []);
       setShowDeleteConfirm(false);
+      setShowToolConfig(false);
+      setAllowedTools([...DEFAULT_TOOLS]);
+      setCustomToolInput('');
     }
     setTimeout(() => nameRef.current?.focus(), 60);
   }, [task?.id]);
 
-  // Sync status and comments when AI updates the task externally
+  // Sync status, assignee, bucket, and comments when task is updated externally
   useEffect(() => {
     if (!task) return;
     setCol(task.col || 'todo');
+    setAssignee(task.assignee || '');
+    setBucket(task.bucket || '');
     setComments(task.comments || []);
-  }, [task?.col, task?.comments?.length]);
+  }, [task?.col, task?.assignee, task?.bucket, task?.comments?.length]);
 
   useEffect(() => {
     function onKey(e) {
@@ -60,12 +89,24 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
 
   function handleRunWithAI() {
     if (!onRunWithAI || aiQueued) return;
-    // Save first so AI sees latest task state
     const updatedTask = { ...task, name: name.trim() || 'Untitled task', desc, assignee, col, bucket, dueDate, dueTime, priority, comments };
     onSave(updatedTask);
     setAiQueued(true);
-    onRunWithAI(updatedTask);
+    onRunWithAI(updatedTask, allowedTools);
     setTimeout(() => setAiQueued(false), 3000);
+  }
+
+  function toggleTool(name) {
+    setAllowedTools(prev => prev.includes(name) ? prev.filter(t => t !== name) : [...prev, name]);
+  }
+  function addCustomTool() {
+    const name = customToolInput.trim();
+    if (!name || allowedTools.includes(name)) { setCustomToolInput(''); return; }
+    setAllowedTools(prev => [...prev, name]);
+    setCustomToolInput('');
+  }
+  function removeCustomTool(name) {
+    setAllowedTools(prev => prev.filter(t => t !== name));
   }
 
   function handleAddComment() {
@@ -282,28 +323,89 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
 
       {onRunWithAI && (
         <div className={styles.aiSection}>
-          <button
-            className={`${styles.aiBtn} ${aiQueued ? styles.aiBtnQueued : ''}`}
-            onClick={handleRunWithAI}
-            disabled={aiQueued}
-          >
-            {aiQueued ? (
-              <>
-                <svg className={styles.aiSpinner} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                </svg>
-                Queued for AI…
-              </>
-            ) : (
-              <>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-                </svg>
-                Run with AI
-              </>
-            )}
-          </button>
-          <span className={styles.aiHint}>AI will analyze and report back in the Queue tab</span>
+          <div className={styles.aiTopRow}>
+            <button
+              className={`${styles.aiBtn} ${aiQueued ? styles.aiBtnQueued : ''}`}
+              onClick={handleRunWithAI}
+              disabled={aiQueued}
+            >
+              {aiQueued ? (
+                <>
+                  <svg className={styles.aiSpinner} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                  </svg>
+                  Queued for AI…
+                </>
+              ) : (
+                <>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                  </svg>
+                  Run with AI
+                </>
+              )}
+            </button>
+            <span className={styles.aiHint}>Reports back in Queue tab</span>
+            <button
+              type="button"
+              className={`${styles.aiToolsToggle} ${showToolConfig ? styles.aiToolsToggleOn : ''}`}
+              onClick={() => setShowToolConfig(v => !v)}
+              title="Configure tool permissions"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
+              </svg>
+              Tools
+              {allowedTools.length !== DEFAULT_TOOLS.length && (
+                <span className={styles.aiToolsBadge}>{allowedTools.length}</span>
+              )}
+            </button>
+          </div>
+
+          {showToolConfig && (
+            <div className={styles.aiToolConfig}>
+              <div className={styles.aiToolGrid}>
+                {ALL_TOOLS.map(tool => {
+                  const checked = allowedTools.includes(tool.name);
+                  return (
+                    <label
+                      key={tool.name}
+                      className={`${styles.aiToolChip} ${checked ? styles.aiToolChipOn : ''}`}
+                    >
+                      <input type="checkbox" checked={checked} onChange={() => toggleTool(tool.name)} />
+                      <span>{tool.name}</span>
+                      {!tool.isDefault && <span className={styles.aiToolExtra}>+</span>}
+                    </label>
+                  );
+                })}
+              </div>
+              {allowedTools.filter(t => !ALL_TOOLS.find(a => a.name === t)).length > 0 && (
+                <div className={styles.aiCustomTags}>
+                  {allowedTools.filter(t => !ALL_TOOLS.find(a => a.name === t)).map(name => (
+                    <span key={name} className={styles.aiCustomTag}>
+                      {name}
+                      <button type="button" className={styles.aiCustomTagRemove} onClick={() => removeCustomTool(name)}>×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className={styles.aiCustomRow}>
+                <input
+                  className={styles.aiCustomInput}
+                  value={customToolInput}
+                  onChange={e => setCustomToolInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomTool(); } }}
+                  placeholder="mcp__aiops__list_projects or custom tool…"
+                />
+                <button
+                  type="button"
+                  className={styles.aiCustomAdd}
+                  onClick={addCustomTool}
+                  disabled={!customToolInput.trim()}
+                >Add</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

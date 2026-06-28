@@ -19,7 +19,7 @@
   border-radius: 50%;
   background: var(--accent);
   border: none;
-  color: #000;
+  color: var(--btn-primary-text);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -50,7 +50,7 @@
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: #ef4444;
+  background: var(--danger);
   border: 1.5px solid var(--bg);
 }
 
@@ -249,7 +249,7 @@
 
 .bubbleUser {
   background: var(--accent);
-  color: #000;
+  color: var(--btn-primary-text);
   border-bottom-right-radius: 3px;
 }
 
@@ -331,10 +331,10 @@
 .sendBtn {
   width: 34px;
   height: 34px;
-  border-radius: 9px;
+  border-radius: var(--radius-xs);
   background: var(--accent);
   border: none;
-  color: #000;
+  color: var(--btn-primary-text);
   display: flex;
   align-items: center;
   justify-content: center;

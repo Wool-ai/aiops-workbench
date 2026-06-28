@@ -6,6 +6,7 @@ const CLAUDE_BIN = process.env.CLAUDE_PATH || '/opt/homebrew/bin/claude';
 const LOG_DIR = '/Users/<user>/Desktop/ai/ai-logs';
 const TIMEOUT_MS = 300_000;
 const WORKSPACE_ROOT = path.join(process.cwd(), 'workspace');
+const MCP_CONFIG = path.join(process.cwd(), 'mcp-config.json');
 
 function slugify(name) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -90,6 +91,9 @@ function runClaude(prompt, logStream, allowedTools = []) {
     if (allowedTools.length > 0) {
       args.push('--allowedTools', allowedTools.join(','));
     }
+    if (fs.existsSync(MCP_CONFIG)) {
+      args.push('--mcp-config', MCP_CONFIG);
+    }
 
     const proc = spawn(CLAUDE_BIN, args, {
       env: { ...process.env },
@@ -97,7 +101,7 @@ function runClaude(prompt, logStream, allowedTools = []) {
 
     const timer = setTimeout(() => {
       proc.kill('SIGTERM');
-      writeLine(logStream, '\n[TIMEOUT] Claude Code exceeded 120s limit.');
+      writeLine(logStream, '\n[TIMEOUT] Claude Code exceeded 300s limit.');
       reject(new Error('Claude Code timed out'));
     }, TIMEOUT_MS);
 
@@ -168,7 +172,7 @@ function extractStructured(text) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { task, projectId, projectName, bucket, replyContext, approvedContext } = req.body;
+  const { task, projectId, projectName, bucket, replyContext, approvedContext, allowedTools: bodyAllowedTools } = req.body;
 
   const notifId = 'n' + Date.now() + Math.random().toString(36).slice(2, 6);
   const logFile = notifId + '.log';
@@ -248,8 +252,10 @@ After completing the work (or if you hit a blocker or need input), write a singl
   let simulated = false;
 
   const approvedTools = approvedContext?.approvedTools || [];
-  const allAllowedTools = [...new Set([...DEFAULT_ALLOWED_TOOLS, ...approvedTools])];
+  const baseTools = bodyAllowedTools?.length ? bodyAllowedTools : DEFAULT_ALLOWED_TOOLS;
+  const allAllowedTools = [...new Set([...baseTools, ...approvedTools])];
   writeLine(logStream, `Allowed tools: ${allAllowedTools.join(', ')}`);
+  writeLine(logStream, `MCP config:    ${fs.existsSync(MCP_CONFIG) ? MCP_CONFIG : '(none)'}`);
   writeLine(logStream);
 
   try {

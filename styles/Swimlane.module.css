@@ -85,6 +85,25 @@
   border-color: var(--border2);
 }
 
+.runAllBtn {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.runAllBtn:hover {
+  background: var(--accent-glow);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
 .addTaskBtn {
   background: transparent;
   border: 1px solid var(--border2);
@@ -581,7 +600,7 @@
 .addBucketSave {
   background: var(--accent);
   border: none;
-  color: #000;
+  color: var(--btn-primary-text);
   border-radius: var(--radius-sm);
   padding: 7px 14px;
   font-size: 12px;
