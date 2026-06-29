@@ -594,6 +594,27 @@
   text-transform: uppercase;
 }
 
+.promptLabelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.templateSelect {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--text2);
+  font-size: 11px;
+  font-family: inherit;
+  padding: 3px 7px;
+  max-width: 160px;
+  transition: border-color 0.15s;
+}
+
+.templateSelect:focus { outline: none; border-color: var(--accent); }
+
 .input {
   background: var(--surface2);
   border: 1px solid var(--border2);
@@ -750,6 +771,39 @@
   font-size: 9px;
   font-weight: 700;
   opacity: 0.6;
+}
+
+.agentOrchestratorNote {
+  font-weight: 500;
+  font-size: 10px;
+  color: var(--accent);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.mcpSectionLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+  margin-top: 2px;
+  display: block;
+}
+
+.toolChkMcp {
+  border-color: rgba(192,132,252,0.3);
+}
+
+.toolChkMcp:hover {
+  border-color: rgba(192,132,252,0.6);
+  color: var(--text2);
+}
+
+.toolChkMcpOn {
+  background: rgba(192,132,252,0.12);
+  border-color: #c084fc;
+  color: #c084fc;
 }
 
 .toolsHint {

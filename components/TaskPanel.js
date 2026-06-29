@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Avatar from './Avatar';
 import { COLUMN_LABELS, COLUMNS, ASSIGNEES, PRIORITY_ORDER, PRIORITY_META } from '../lib/data';
 import styles from '../styles/TaskPanel.module.css';
@@ -40,7 +40,27 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
   const [showToolConfig, setShowToolConfig] = useState(false);
   const [allowedTools, setAllowedTools] = useState([...DEFAULT_TOOLS]);
   const [customToolInput, setCustomToolInput] = useState('');
+  const [mcpServers, setMcpServers] = useState([]);
+  const [templates, setTemplates] = useState([]);
+  const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [availableAgents, setAvailableAgents] = useState([]);
+  const [selectedAgentIds, setSelectedAgentIds] = useState([]);
   const nameRef = useRef(null);
+
+  useEffect(() => {
+    fetch('/api/mcp-servers')
+      .then(r => r.json())
+      .then(d => setMcpServers(Object.keys(d.mcpServers || {})))
+      .catch(() => {});
+    fetch('/api/templates')
+      .then(r => r.json())
+      .then(d => setTemplates(Array.isArray(d) ? d : []))
+      .catch(() => {});
+    fetch('/api/agents')
+      .then(r => r.json())
+      .then(d => setAvailableAgents(Array.isArray(d) ? d : []))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (task) {
@@ -57,6 +77,8 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
       setShowToolConfig(false);
       setAllowedTools([...DEFAULT_TOOLS]);
       setCustomToolInput('');
+      setSelectedTemplate('');
+      setSelectedAgentIds([]);
     }
     setTimeout(() => nameRef.current?.focus(), 60);
   }, [task?.id]);
@@ -92,7 +114,8 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
     const updatedTask = { ...task, name: name.trim() || 'Untitled task', desc, assignee, col, bucket, dueDate, dueTime, priority, comments };
     onSave(updatedTask);
     setAiQueued(true);
-    onRunWithAI(updatedTask, allowedTools);
+    const tpl = templates.find(t => t.id === selectedTemplate);
+    onRunWithAI(updatedTask, allowedTools, tpl?.content || undefined, selectedAgentIds.length ? selectedAgentIds : undefined);
     setTimeout(() => setAiQueued(false), 3000);
   }
 
@@ -345,7 +368,35 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
                 </>
               )}
             </button>
-            <span className={styles.aiHint}>Reports back in Queue tab</span>
+            {templates.length > 0 && (
+              <select
+                className={styles.aiTemplateSelect}
+                value={selectedTemplate}
+                onChange={e => setSelectedTemplate(e.target.value)}
+                title="Attach a prompt template"
+              >
+                <option value="">No template</option>
+                {templates.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            )}
+            <span className={styles.aiHint}>Queue tab</span>
+            <button
+              type="button"
+              className={`${styles.aiToolsToggle} ${selectedAgentIds.length ? styles.aiToolsToggleOn : ''}`}
+              onClick={() => setShowToolConfig(v => !v)}
+              title="Select agents"
+              style={{ display: availableAgents.length ? undefined : 'none' }}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/>
+              </svg>
+              Agents
+              {selectedAgentIds.length > 0 && (
+                <span className={styles.aiToolsBadge}>{selectedAgentIds.length}</span>
+              )}
+            </button>
             <button
               type="button"
               className={`${styles.aiToolsToggle} ${showToolConfig ? styles.aiToolsToggleOn : ''}`}
@@ -364,6 +415,33 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
 
           {showToolConfig && (
             <div className={styles.aiToolConfig}>
+              {availableAgents.length > 0 && (
+                <>
+                  <div className={styles.aiMcpLabel}>Agents {selectedAgentIds.length > 1 && <span style={{ color: 'var(--accent)', fontWeight: 400 }}>— {selectedAgentIds.length} selected (orchestration mode)</span>}</div>
+                  <div className={styles.aiToolGrid}>
+                    {availableAgents.map(agent => {
+                      const checked = selectedAgentIds.includes(agent.id);
+                      return (
+                        <label
+                          key={agent.id}
+                          className={`${styles.aiToolChip} ${styles.aiToolChipMcp} ${checked ? styles.aiToolChipMcpOn : ''}`}
+                          title={agent.description || agent.role}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => setSelectedAgentIds(prev =>
+                              prev.includes(agent.id) ? prev.filter(id => id !== agent.id) : [...prev, agent.id]
+                            )}
+                          />
+                          <span>{agent.name}</span>
+                          <span className={styles.aiToolExtra}>{agent.role}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
               <div className={styles.aiToolGrid}>
                 {ALL_TOOLS.map(tool => {
                   const checked = allowedTools.includes(tool.name);
@@ -379,9 +457,30 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
                   );
                 })}
               </div>
-              {allowedTools.filter(t => !ALL_TOOLS.find(a => a.name === t)).length > 0 && (
+              {mcpServers.length > 0 && (
+                <>
+                  <div className={styles.aiMcpLabel}>MCP Servers</div>
+                  <div className={styles.aiToolGrid}>
+                    {mcpServers.map(srv => {
+                      const wildcard = `mcp__${srv}__*`;
+                      const checked = allowedTools.includes(wildcard);
+                      return (
+                        <label
+                          key={srv}
+                          className={`${styles.aiToolChip} ${styles.aiToolChipMcp} ${checked ? styles.aiToolChipMcpOn : ''}`}
+                        >
+                          <input type="checkbox" checked={checked} onChange={() => toggleTool(wildcard)} />
+                          <span>{srv}</span>
+                          <span className={styles.aiToolExtra}>mcp</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+              {allowedTools.filter(t => !ALL_TOOLS.find(a => a.name === t) && !mcpServers.includes(t.replace(/^mcp__(.+)__\*$/, '$1'))).length > 0 && (
                 <div className={styles.aiCustomTags}>
-                  {allowedTools.filter(t => !ALL_TOOLS.find(a => a.name === t)).map(name => (
+                  {allowedTools.filter(t => !ALL_TOOLS.find(a => a.name === t) && !mcpServers.includes(t.replace(/^mcp__(.+)__\*$/, '$1'))).map(name => (
                     <span key={name} className={styles.aiCustomTag}>
                       {name}
                       <button type="button" className={styles.aiCustomTagRemove} onClick={() => removeCustomTool(name)}>×</button>
@@ -395,7 +494,7 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
                   value={customToolInput}
                   onChange={e => setCustomToolInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomTool(); } }}
-                  placeholder="mcp__aiops__list_projects or custom tool…"
+                  placeholder="mcp__server__specific_tool or custom name…"
                 />
                 <button
                   type="button"

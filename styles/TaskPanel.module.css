@@ -8,11 +8,11 @@
   width: 460px;
   max-width: calc(100vw - 68px);
   background: var(--surface);
-  border-left: 1px solid var(--border2);
+  border-left: 1px solid var(--border);
   z-index: 100;
   display: flex;
   flex-direction: column;
-  box-shadow: -10px 0 48px rgba(0, 0, 0, 0.5);
+  box-shadow: -16px 0 56px rgba(0, 0, 0, 0.55), -1px 0 0 var(--border2);
   animation: panelSlideIn 0.22s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
@@ -27,8 +27,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 15px 20px;
+  padding: 12px 18px;
   border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--surface2) 0%, var(--surface) 100%);
   flex-shrink: 0;
 }
 
@@ -61,28 +62,31 @@
 
 .statusRow {
   display: flex;
-  gap: 6px;
-  padding: 12px 20px;
+  gap: 5px;
+  padding: 10px 16px;
   border-bottom: 1px solid var(--border);
+  background: var(--surface);
   flex-shrink: 0;
 }
 
 .statusChip {
   flex: 1;
-  padding: 6px 4px;
+  padding: 5px 4px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  background: var(--surface2);
-  font-size: 12px;
-  font-weight: 500;
+  background: var(--surface3);
+  font-size: 11px;
+  font-weight: 600;
   color: var(--text3);
   transition: border-color 0.15s, color 0.15s, background 0.15s;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .statusChip:hover {
   border-color: var(--border2);
   color: var(--text2);
+  background: var(--surface4);
 }
 
 .active_todo   { border-color: var(--todo-c) !important; color: var(--todo-c) !important; background: var(--todo-bg) !important; }
@@ -95,9 +99,10 @@
 .panelBody {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
+  background: var(--surface);
 }
 
 /* ── Fields ──────────────────────────────────── */
@@ -120,14 +125,14 @@
 .textarea,
 .select {
   width: 100%;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
+  background: var(--surface3);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 8px 11px;
+  padding: 7px 10px;
   font-size: 13px;
   color: var(--text);
   font-family: inherit;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
 
 .input:focus,
@@ -135,7 +140,8 @@
 .select:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
+  background: var(--surface4);
+  box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
 .textarea {
@@ -346,14 +352,15 @@
 }
 
 .aiComment {
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-left: 3px solid var(--accent);
+  background: linear-gradient(160deg, var(--surface3) 0%, var(--surface2) 100%);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
   border-radius: var(--radius-sm);
   padding: 9px 12px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  box-shadow: var(--shadow-sm);
 }
 
 .aiCommentHeader {
@@ -468,7 +475,7 @@
   flex-direction: column;
   gap: 0;
   border-top: 1px solid var(--border);
-  background: rgba(44, 183, 211, 0.03);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 4%, var(--surface)) 0%, var(--surface) 100%);
   flex-shrink: 0;
 }
 
@@ -483,21 +490,22 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(44, 183, 211, 0.1);
-  border: 1px solid var(--accent);
+  background: var(--accent-glow);
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
   color: var(--accent);
   border-radius: var(--radius-sm);
-  padding: 6px 14px;
+  padding: 5px 13px;
   font-size: 12px;
   font-weight: 600;
   transition: background 0.15s, box-shadow 0.15s;
   white-space: nowrap;
   flex-shrink: 0;
+  box-shadow: 0 0 8px var(--accent-glow);
 }
 
 .aiBtn:hover:not(:disabled) {
-  background: rgba(44, 183, 211, 0.18);
-  box-shadow: 0 0 12px var(--accent-glow-strong);
+  background: var(--accent-glow-strong);
+  box-shadow: 0 0 14px var(--accent-glow-strong);
 }
 
 .aiBtnQueued {
@@ -517,19 +525,37 @@
   font-size: 11px;
   color: var(--text3);
   line-height: 1.4;
-  flex: 1;
 }
+
+.aiTemplateSelect {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text2);
+  font-size: 11px;
+  font-family: inherit;
+  padding: 4px 8px;
+  max-width: 130px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.aiTemplateSelect:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+.aiTemplateSelect option { background: var(--surface); }
 
 .aiToolsToggle {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   background: transparent;
-  border: 1px solid var(--border2);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text3);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   padding: 4px 9px;
   cursor: pointer;
   transition: background 0.12s, border-color 0.12s, color 0.12s;
@@ -538,13 +564,13 @@
 }
 
 .aiToolsToggle:hover {
-  border-color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
   color: var(--accent);
   background: var(--accent-glow);
 }
 
 .aiToolsToggleOn {
-  border-color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
   color: var(--accent);
   background: var(--accent-glow);
 }
@@ -580,9 +606,9 @@
   align-items: center;
   gap: 4px;
   padding: 3px 9px;
-  border-radius: var(--radius-sm);
-  background: var(--surface2);
-  border: 1px solid var(--border2);
+  border-radius: var(--radius-xs);
+  background: var(--surface3);
+  border: 1px solid var(--border);
   font-size: 11px;
   font-weight: 500;
   color: var(--text3);
@@ -594,13 +620,14 @@
 .aiToolChip input[type="checkbox"] { display: none; }
 
 .aiToolChip:hover {
-  border-color: var(--border);
+  border-color: var(--border2);
   color: var(--text2);
+  background: var(--surface4);
 }
 
 .aiToolChipOn {
   background: var(--accent-glow);
-  border-color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
   color: var(--accent);
 }
 
@@ -608,6 +635,30 @@
   font-size: 9px;
   font-weight: 700;
   opacity: 0.6;
+}
+
+.aiMcpLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.aiToolChipMcp {
+  border-color: rgba(192,132,252,0.3);
+}
+
+.aiToolChipMcp:hover {
+  border-color: rgba(192,132,252,0.6);
+  color: var(--text2);
+}
+
+.aiToolChipMcpOn {
+  background: rgba(192,132,252,0.12);
+  border-color: #c084fc;
+  color: #c084fc;
 }
 
 .aiCustomTags {
@@ -621,12 +672,12 @@
   align-items: center;
   gap: 4px;
   padding: 3px 8px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xs);
   background: rgba(192,132,252,0.1);
   border: 1px solid rgba(192,132,252,0.35);
   color: #c084fc;
   font-size: 11px;
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: var(--font-mono);
 }
 
 .aiCustomTagRemove {

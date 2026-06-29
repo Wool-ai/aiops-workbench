@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import styles from '../styles/ChatBot.module.css';
 
 function TypingDots() {
@@ -22,7 +23,19 @@ function Message({ msg }) {
         </div>
       )}
       <div className={`${styles.bubble} ${isUser ? styles.bubbleUser : styles.bubbleAI}`}>
-        {msg.content}
+        {isUser ? msg.content : (
+          <div className={styles.md}>
+            <ReactMarkdown
+              components={{
+                a: ({ node, ...props }) => (
+                  <a {...props} target="_blank" rel="noopener noreferrer" />
+                ),
+              }}
+            >
+              {msg.content}
+            </ReactMarkdown>
+          </div>
+        )}
       </div>
     </div>
   );

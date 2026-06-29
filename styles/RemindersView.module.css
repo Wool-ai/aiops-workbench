@@ -9,16 +9,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .headerLeft {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 700;
-  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text3);
 }
 
 .newBtn {
@@ -26,12 +28,13 @@
   align-items: center;
   gap: 6px;
   background: var(--accent);
-  border: none;
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
   color: var(--btn-primary-text);
   border-radius: var(--radius-sm);
-  padding: 6px 14px;
+  padding: 5px 12px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
+  box-shadow: 0 0 8px var(--accent-glow);
   transition: background 0.15s, box-shadow 0.15s;
 }
 
@@ -45,7 +48,7 @@
   display: flex;
   gap: 4px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .filterBtn {
@@ -56,9 +59,10 @@
   border: none;
   border-bottom: 2px solid transparent;
   color: var(--text3);
-  font-size: 13px;
-  font-weight: 500;
-  padding: 8px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 7px 10px;
   margin-bottom: -1px;
   transition: color 0.15s, border-color 0.15s;
 }
@@ -75,14 +79,16 @@
   font-weight: 700;
   background: var(--surface3);
   color: var(--text3);
-  border-radius: 10px;
-  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1px 7px;
   line-height: 1.4;
 }
 
 .badgeOverdue {
   background: rgba(240, 112, 112, 0.15);
   color: var(--danger);
+  border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
 }
 
 /* ── List ────────────────────────────────────────────────────────────────── */
@@ -90,7 +96,7 @@
 .list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
 }
 
 /* ── Card ────────────────────────────────────────────────────────────────── */
@@ -99,14 +105,19 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  background: var(--surface);
+  background: linear-gradient(160deg, var(--surface2) 0%, var(--surface) 100%);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 12px 14px;
-  transition: border-color 0.15s;
+  padding: 11px 13px;
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.04);
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
 
-.card:hover { border-color: var(--border2); }
+.card:hover {
+  background: linear-gradient(160deg, var(--surface3) 0%, var(--surface2) 100%);
+  border-color: var(--border2);
+  box-shadow: var(--shadow-md);
+}
 
 .cardDone {
   opacity: 0.5;
@@ -119,8 +130,8 @@
 /* Checkbox */
 
 .check {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   border: 1.5px solid var(--border2);
   background: transparent;
@@ -138,6 +149,7 @@
   background: var(--done-c);
   border-color: var(--done-c);
   color: var(--btn-primary-text);
+  box-shadow: 0 0 5px color-mix(in srgb, var(--done-c) 40%, transparent);
 }
 
 .checkOverdue {
@@ -160,7 +172,7 @@
 }
 
 .cardTitle {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text);
   line-height: 1.4;
@@ -181,9 +193,9 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--text3);
-  background: var(--surface2);
+  background: var(--surface3);
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 2px 8px;
@@ -196,9 +208,9 @@
 }
 
 .projectChip {
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--text3);
-  background: var(--surface2);
+  background: var(--surface3);
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 2px 8px;
@@ -209,7 +221,7 @@
 }
 
 .cardNote {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text3);
   line-height: 1.5;
 }
@@ -241,9 +253,9 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  padding: 80px 20px;
+  padding: 70px 20px;
   color: var(--text3);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 /* ── Edit panel ──────────────────────────────────────────────────────────── */
@@ -276,13 +288,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 20px 16px;
+  background: var(--surface2);
   border-bottom: 1px solid var(--border);
+  padding: 14px 18px;
   flex-shrink: 0;
 }
 
 .epTitle {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text);
 }
@@ -311,20 +324,20 @@
 .fg { display: flex; flex-direction: column; gap: 6px; }
 
 .fl {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10.5px;
+  font-weight: 700;
   color: var(--text3);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .fi,
 .ft,
 .fsel {
-  background: var(--surface2);
-  border: 1px solid var(--border2);
+  background: var(--surface3);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 8px 10px;
+  padding: 7px 10px;
   font-size: 13px;
   color: var(--text);
   font-family: inherit;
@@ -334,7 +347,7 @@
 .fi:focus, .ft:focus, .fsel:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
+  box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
 .ft { resize: none; line-height: 1.5; }
@@ -360,10 +373,10 @@
 
 .delBtn {
   background: transparent;
-  border: 1px solid var(--danger-border);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
   color: var(--danger);
   border-radius: var(--radius-sm);
-  padding: 6px 14px;
+  padding: 6px 12px;
   font-size: 12px;
   transition: background 0.15s;
 }
@@ -372,10 +385,10 @@
 
 .cancelBtn {
   background: transparent;
-  border: 1px solid var(--border2);
+  border: 1px solid var(--border);
   color: var(--text3);
   border-radius: var(--radius-sm);
-  padding: 6px 14px;
+  padding: 5px 11px;
   font-size: 12px;
   transition: color 0.15s, background 0.15s;
 }
@@ -384,12 +397,13 @@
 
 .saveBtn {
   background: var(--accent);
-  border: none;
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
   color: var(--btn-primary-text);
   border-radius: var(--radius-sm);
-  padding: 6px 18px;
+  padding: 5px 12px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
+  box-shadow: 0 0 8px var(--accent-glow);
   transition: filter 0.15s, opacity 0.15s;
 }
 

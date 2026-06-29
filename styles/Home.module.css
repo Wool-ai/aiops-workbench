@@ -14,48 +14,84 @@
 .topbar {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 14px 32px;
+  gap: 10px;
+  padding: 10px 28px;
   border-bottom: 1px solid var(--border);
   background: var(--topbar-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   position: sticky;
   top: 0;
   z-index: 10;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.28);
+  overflow: hidden;
+  /* Echo the sidebar's scanline texture at a lower intensity */
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255,255,255,0.007) 2px,
+      rgba(255,255,255,0.007) 4px
+    );
+}
+
+/* Bottom glow — horizontal mirror of sidebar's right-edge glow */
+.topbar::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--accent) 35%,
+    var(--accent) 65%,
+    transparent 100%
+  );
+  opacity: 0.18;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .topbarTop {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 34px;
+  gap: 10px;
+  min-height: 30px;
 }
 
-/* ── App name ── */
+/* ── App name — terminal breadcrumb style ── */
 
 .appName {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
   font-weight: 600;
   color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   white-space: nowrap;
   flex-shrink: 0;
-  letter-spacing: -0.01em;
+  opacity: 0.75;
 }
 
 .appName svg {
   color: var(--accent);
   flex-shrink: 0;
+  opacity: 0.9;
 }
 
 .topbarDivider {
   width: 1px;
-  height: 16px;
-  background: var(--border2);
+  height: 14px;
+  background: linear-gradient(180deg, transparent, var(--border2), transparent);
   flex-shrink: 0;
+  opacity: 0.8;
 }
 
 /* ── Per-view page title ── */
@@ -70,15 +106,17 @@
 .pageTitleIcon {
   display: flex;
   align-items: center;
-  color: var(--text3);
+  color: var(--accent);
   flex-shrink: 0;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 60%, transparent));
 }
 
 .pageTitleText {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text);
   white-space: nowrap;
+  letter-spacing: -0.01em;
 }
 
 /* ── Topbar right-side context ── */
@@ -91,57 +129,63 @@
 }
 
 .topbarBadge {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   background: var(--inprog-bg);
   color: var(--inprog-c);
-  border-radius: 8px;
-  padding: 3px 10px;
+  border: 1px solid color-mix(in srgb, var(--inprog-c) 25%, transparent);
+  border-radius: var(--radius-xs);
+  padding: 3px 9px;
   white-space: nowrap;
+  letter-spacing: 0.01em;
 }
 
 .topbarBadgeDanger {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
-  background: rgba(240, 112, 112, 0.1);
+  background: var(--danger-glow);
   color: var(--danger);
-  border-radius: 8px;
-  padding: 3px 10px;
+  border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
+  border-radius: var(--radius-xs);
+  padding: 3px 9px;
   white-space: nowrap;
   margin-left: auto;
+  letter-spacing: 0.01em;
 }
 
 .topbarSubtle {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text3);
   margin-left: auto;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .newProjectBtn {
   background: var(--accent);
-  border: none;
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
   color: var(--btn-primary-text);
   border-radius: var(--radius-sm);
-  padding: 7px 14px;
-  font-size: 13px;
-  font-weight: 500;
+  padding: 6px 13px;
+  font-size: 12px;
+  font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
-  box-shadow: 0 0 0 0 var(--accent-glow);
-  letter-spacing: 0.01em;
+  box-shadow: 0 0 10px var(--accent-glow);
+  letter-spacing: 0.02em;
 }
 
 .newProjectBtn:hover {
   background: var(--accent-hover);
-  box-shadow: 0 0 16px var(--accent-glow-strong);
+  box-shadow: 0 0 18px var(--accent-glow-strong), 0 2px 8px rgba(0,0,0,0.3);
   transform: translateY(-1px);
 }
 
 .newProjectBtn:active {
   transform: translateY(0);
+  box-shadow: 0 0 8px var(--accent-glow);
 }
 
 .main {
@@ -227,28 +271,29 @@
 
 .searchRow {
   display: flex;
-  gap: 8px;
+  gap: 7px;
   align-items: center;
 }
 
 .searchInput {
   flex: 1;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
+  background: var(--surface3);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 7px 11px 7px 32px;
-  font-size: 13px;
+  padding: 6px 10px 6px 30px;
+  font-size: 12.5px;
   color: var(--text);
-  transition: border-color 0.15s, box-shadow 0.15s;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236878a0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%233e5278' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: 10px center;
+  background-position: 9px center;
 }
 
 .searchInput:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
+  background: var(--surface4);
+  box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
 .searchInput::placeholder {
@@ -256,25 +301,25 @@
 }
 
 .filterSelect {
-  background: var(--surface2);
-  border: 1px solid var(--border2);
+  background: var(--surface3);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 7px 28px 7px 11px;
-  font-size: 13px;
+  padding: 6px 26px 6px 10px;
+  font-size: 12.5px;
   color: var(--text2);
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236878a0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%233e5278' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 8px center;
+  background-position: right 7px center;
   transition: border-color 0.15s, box-shadow 0.15s;
-  min-width: 130px;
+  min-width: 126px;
 }
 
 .filterSelect:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
+  box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
 .filterSelect option {
@@ -282,25 +327,25 @@
 }
 
 .sortSelect {
-  background: var(--surface2);
-  border: 1px solid var(--border2);
+  background: var(--surface3);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 7px 28px 7px 11px;
-  font-size: 13px;
+  padding: 6px 26px 6px 10px;
+  font-size: 12.5px;
   color: var(--text2);
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236878a0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%233e5278' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 8px center;
+  background-position: right 7px center;
   transition: border-color 0.15s, box-shadow 0.15s;
-  min-width: 120px;
+  min-width: 116px;
 }
 
 .sortSelect:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
+  box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
 .sortSelect option {
@@ -309,18 +354,19 @@
 
 .clearFiltersBtn {
   background: transparent;
-  border: 1px solid var(--border2);
+  border: 1px solid var(--border);
   color: var(--text3);
   border-radius: var(--radius-sm);
-  padding: 7px 12px;
-  font-size: 12px;
+  padding: 6px 11px;
+  font-size: 11.5px;
   white-space: nowrap;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
 .clearFiltersBtn:hover {
   color: var(--text2);
   border-color: var(--border2);
+  background: var(--surface2);
 }
 
 .empty {

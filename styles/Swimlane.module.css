@@ -5,7 +5,7 @@
   margin-bottom: 30px;
   width: 1000px;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.03);
   transition: border-color 0.2s;
 }
 
@@ -17,15 +17,16 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 15px 25px;
+  padding: 12px 22px;
   cursor: pointer;
   user-select: none;
   border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--surface2) 0%, var(--surface) 100%);
   transition: background 0.15s;
 }
 
 .header:hover {
-  background: var(--surface2);
+  background: linear-gradient(180deg, var(--surface3) 0%, var(--surface2) 100%);
 }
 
 .left {
@@ -43,18 +44,18 @@
 }
 
 .name {
-  font-size: 17px;
-  font-weight: bold;
+  font-size: 13.5px;
+  font-weight: 700;
   color: var(--text);
   letter-spacing: 0.01em;
 }
 
 .count {
-  font-size: 12px;
+  font-size: 10px;
   color: var(--text3);
   background: var(--surface3);
   border: 1px solid var(--border);
-  padding: 2px 8px;
+  padding: 1px 8px;
   border-radius: 20px;
   font-variant-numeric: tabular-nums;
 }
@@ -70,7 +71,7 @@
   border: 1px solid var(--border);
   color: var(--text3);
   border-radius: var(--radius-sm);
-  padding: 5px 10px;
+  padding: 5px 11px;
   font-size: 12px;
   font-weight: 500;
   display: flex;
@@ -90,7 +91,7 @@
   border: 1px solid var(--accent);
   color: var(--accent);
   border-radius: var(--radius-sm);
-  padding: 5px 10px;
+  padding: 5px 11px;
   font-size: 12px;
   font-weight: 500;
   display: flex;
@@ -109,7 +110,7 @@
   border: 1px solid var(--border2);
   color: var(--text2);
   border-radius: var(--radius-sm);
-  padding: 5px 10px;
+  padding: 5px 11px;
   font-size: 12px;
   font-weight: 500;
   display: flex;
@@ -175,12 +176,13 @@
 }
 
 .colLabel {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10.5px;
+  font-weight: 700;
   padding: 3px 9px;
   border-radius: 20px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: var(--text3);
 }
 
 .label_todo    { background: var(--todo-bg);    color: var(--todo-c); }
@@ -189,13 +191,13 @@
 .label_done    { background: var(--done-bg);    color: var(--done-c); }
 
 .colCount {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  color: var(--text2);
+  color: var(--text3);
   background: var(--surface3);
-  border: 1px solid var(--border2);
+  border: 1px solid var(--border);
   padding: 1px 7px;
-  border-radius: 10px;
+  border-radius: 20px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -210,7 +212,7 @@
 }
 
 .cardsOver {
-  background: var(--accent-glow);
+  background: var(--surface2);
   outline: 1px solid var(--accent);
   outline-offset: 2px;
 }
@@ -316,10 +318,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 700;
   color: var(--text3);
-  letter-spacing: 0.07em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   padding: 0 2px 3px;
 }
@@ -403,13 +405,13 @@
 }
 
 .bucketCount {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  color: var(--text2);
+  color: var(--text3);
   background: var(--surface3);
-  border: 1px solid var(--border2);
+  border: 1px solid var(--border);
   padding: 1px 7px;
-  border-radius: 10px;
+  border-radius: 20px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -577,10 +579,10 @@
 }
 
 .addBucketInput {
-  background: var(--surface2);
-  border: 1px solid var(--border2);
+  background: var(--surface3);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 7px 11px;
+  padding: 7px 10px;
   font-size: 13px;
   color: var(--text);
   min-width: 180px;
@@ -590,7 +592,7 @@
 .addBucketInput:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
+  box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
 .addBucketInput::placeholder {
@@ -599,12 +601,13 @@
 
 .addBucketSave {
   background: var(--accent);
-  border: none;
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
   color: var(--btn-primary-text);
   border-radius: var(--radius-sm);
-  padding: 7px 14px;
+  padding: 5px 14px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
+  box-shadow: 0 0 8px var(--accent-glow);
   transition: background 0.15s;
 }
 
@@ -614,14 +617,15 @@
 
 .addBucketCancel {
   background: transparent;
-  border: 1px solid var(--border2);
-  color: var(--text2);
+  border: 1px solid var(--border);
+  color: var(--text3);
   border-radius: var(--radius-sm);
-  padding: 7px 12px;
+  padding: 5px 12px;
   font-size: 12px;
-  transition: background 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 
 .addBucketCancel:hover {
   background: var(--surface2);
+  color: var(--text2);
 }

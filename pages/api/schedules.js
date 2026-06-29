@@ -30,6 +30,7 @@ export default function handler(req, res) {
       projectName: body.projectName || '',
       schedule: body.schedule,
       allowedTools: body.allowedTools || [],
+      agentIds: body.agentIds || [],
       enabled: true,
       lastRun: null,
       nextRun: computeNextRun(body.schedule)?.toISOString() || null,

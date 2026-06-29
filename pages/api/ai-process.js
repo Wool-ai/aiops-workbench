@@ -7,6 +7,15 @@ const LOG_DIR = '/Users/<user>/Desktop/ai/ai-logs';
 const TIMEOUT_MS = 300_000;
 const WORKSPACE_ROOT = path.join(process.cwd(), 'workspace');
 const MCP_CONFIG = path.join(process.cwd(), 'mcp-config.json');
+const AGENTS_FILE = path.join(process.cwd(), 'agents.json');
+
+function loadAgents(ids) {
+  if (!ids?.length) return [];
+  try {
+    const all = JSON.parse(fs.readFileSync(AGENTS_FILE, 'utf8'));
+    return ids.map(id => all.find(a => a.id === id)).filter(Boolean);
+  } catch { return []; }
+}
 
 function slugify(name) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -81,13 +90,14 @@ function writeLine(stream, line = '') {
   stream.write(line + '\n');
 }
 
-function runClaude(prompt, logStream, allowedTools = []) {
+function runClaude(prompt, logStream, allowedTools = [], model = null) {
   return new Promise((resolve, reject) => {
     let stdout = '';
     let stderr = '';
     const startMs = Date.now();
 
     const args = ['--print', '--output-format', 'json'];
+    if (model) args.push('--model', model);
     if (allowedTools.length > 0) {
       args.push('--allowedTools', allowedTools.join(','));
     }
@@ -172,7 +182,7 @@ function extractStructured(text) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { task, projectId, projectName, bucket, replyContext, approvedContext, allowedTools: bodyAllowedTools } = req.body;
+  const { task, projectId, projectName, bucket, replyContext, approvedContext, allowedTools: bodyAllowedTools, instructions, agentIds } = req.body;
 
   const notifId = 'n' + Date.now() + Math.random().toString(36).slice(2, 6);
   const logFile = notifId + '.log';
@@ -192,15 +202,50 @@ export default async function handler(req, res) {
   writeLine(logStream, `Mode:      ${mode}`);
   writeLine(logStream);
 
+  // Build MCP tool context so Claude knows to use them for workspace operations
+  let mcpToolHint = '';
+  if (fs.existsSync(MCP_CONFIG)) {
+    try {
+      const mcpCfg = JSON.parse(fs.readFileSync(MCP_CONFIG, 'utf8'));
+      const servers = Object.keys(mcpCfg.mcpServers || {});
+      if (servers.length) {
+        mcpToolHint = `
+You have MCP tools available for reading and writing live workspace data — prefer these over editing data.json directly:
+- mcp__aiops__list_projects       — list all projects, their ids, buckets, and task counts
+- mcp__aiops__create_project      — create a new project
+- mcp__aiops__list_buckets        — list work buckets in a project
+- mcp__aiops__add_bucket          — add a bucket to a project
+- mcp__aiops__delete_bucket       — remove a bucket (tasks are preserved)
+- mcp__aiops__get_project_tasks   — get all tasks in a project (includes ids)
+- mcp__aiops__create_task         — add a task to a project
+- mcp__aiops__update_task         — update any task fields (status, assignee, priority, etc.)
+- mcp__aiops__delete_task         — delete a task
+- mcp__aiops__add_comment         — add a comment to a task
+- mcp__aiops__search_tasks        — search tasks across all projects
+- mcp__aiops__get_daily_tasks     — list recurring daily tasks
+- mcp__aiops__create_daily_task   — add a recurring daily task
+- mcp__aiops__update_daily_task   — update a recurring daily task
+- mcp__aiops__delete_daily_task   — delete a recurring daily task
+- mcp__aiops__get_reminders       — list reminders
+- mcp__aiops__create_reminder     — create a reminder
+- mcp__aiops__complete_reminder   — mark a reminder done
+- mcp__aiops__delete_reminder     — delete a reminder
+- mcp__aiops__get_ai_queue        — view recent AI task results
+Always call list_projects first to get valid project ids before creating or updating tasks.`;
+      }
+    } catch {}
+  }
+
   let prompt;
   if (replyContext) {
     prompt = `You are an AI assistant in AIOps Workbench. You previously worked on a task and asked the human a question. They have now replied — continue and complete the work.
+${mcpToolHint}
 
 Task: "${task.name}"
 Your previous message: "${replyContext.previousMessage}"
 Human reply: "${replyContext.reply}"
 
-Use your tools (Bash, Write, Read, Edit, etc.) to carry out whatever the human's reply enables. Do the actual work now.
+Use your tools to carry out whatever the human's reply enables. Do the actual work now.
 
 When done, write a single JSON line as your final output — nothing else after it:
 {"type":"completed","message":"What you did"} or {"type":"issue","message":"What went wrong"} or {"type":"human_input","message":"What you still need"}`;
@@ -211,6 +256,7 @@ When done, write a single JSON line as your final output — nothing else after 
       return `  - ${op.tool}: ${inputStr}`;
     }).join('\n');
     prompt = `You are an AI assistant in AIOps Workbench. You were previously working on a task but some tool uses were blocked by the permission system. The user has now approved those tools — resume and complete the work without starting over.
+${mcpToolHint}
 
 Project: ${projectName}
 Work Bucket: ${bucket || 'Uncategorized'}
@@ -224,21 +270,46 @@ Approved tools: ${approvedTools.join(', ')}
 
 Your previous progress/status: "${previousMessage}"
 
-Continue from where you left off. Do NOT repeat work you already completed. Use the now-approved tools (${approvedTools.join(', ')}) along with Bash, Write, Read, Edit, and any other tools you need to finish the task.
+Continue from where you left off. Do NOT repeat work you already completed.
 
 After completing the work (or if you hit a new blocker), write a single JSON line as your final output — nothing else after it:
 {"type":"completed","message":"Brief summary of what you did"} or {"type":"issue","message":"What blocked you"} or {"type":"human_input","message":"What decision or info you need"}`;
   } else {
     const workspaceCtx = loadWorkspaceContext(projectId, bucket);
-    prompt = `You are an AI assistant in AIOps Workbench. You have been assigned a task to complete.
+
+    // Build agent context string
+    let agentCtx = '';
+    if (agents.length === 1) {
+      const a = agents[0];
+      agentCtx = `\nYou are operating as: ${a.name} (${a.role})${a.description ? ` — ${a.description}` : ''}.${a.systemPrompt ? `\n\nYour specific instructions:\n${a.systemPrompt}` : ''}`;
+    } else if (agents.length > 1) {
+      const agentList = agents.map((a, i) =>
+        `  Agent ${i + 1}: ${a.name} [${a.role}]${a.description ? ` — ${a.description}` : ''}
+   System: ${a.systemPrompt || '(default behavior)'}
+   Tools: ${a.allowedTools?.join(', ') || 'default'}`
+      ).join('\n\n');
+      agentCtx = `\nYou are the ORCHESTRATOR for this task. You have a team of ${agents.length} specialized agents. Use the Agent tool to delegate work to each one — pass their system prompt + the relevant subtask as the prompt to each Agent call. Run independent subtasks in parallel where possible.
+
+Your agent team:
+${agentList}
+
+Orchestration approach:
+1. Analyze the task and identify distinct subtasks
+2. Delegate each subtask to the appropriate agent using the Agent tool
+3. Collect results from all agents
+4. Synthesize and report the combined outcome`;
+    }
+
+    prompt = `You are an AI assistant in AIOps Workbench. You have been assigned a task to complete.${agentCtx}
+${mcpToolHint}
 
 Project: ${projectName}
 Work Bucket: ${bucket || 'Uncategorized'}
 Task: "${task.name}"
 ${task.desc ? `Description: "${task.desc}"` : ''}
 Current status: ${task.col}
-${workspaceCtx || ''}
-USE YOUR TOOLS to complete this task now. Write files, run commands, read code — do the actual work using Bash, Write, Read, Edit and any other tools available to you. Do not just describe what you would do.
+${workspaceCtx || ''}${instructions ? `\n\nAdditional instructions:\n${instructions}` : ''}
+USE YOUR TOOLS to complete this task now. Do the actual work — do not just describe what you would do.
 
 After completing the work (or if you hit a blocker or need input), write a single JSON line as your final output — nothing else after it:
 {"type":"completed","message":"Brief summary of what you did"} or {"type":"issue","message":"What blocked you"} or {"type":"human_input","message":"What decision or info you need"}`;
@@ -251,15 +322,46 @@ After completing the work (or if you hit a blocker or need input), write a singl
   let type, message, deniedOperations = [];
   let simulated = false;
 
+  // Load configured agents
+  const agents = loadAgents(agentIds);
+  if (agents.length) {
+    writeLine(logStream, `Agents: ${agents.map(a => `${a.name} (${a.role})`).join(', ')}`);
+  }
+
   const approvedTools = approvedContext?.approvedTools || [];
-  const baseTools = bodyAllowedTools?.length ? bodyAllowedTools : DEFAULT_ALLOWED_TOOLS;
-  const allAllowedTools = [...new Set([...baseTools, ...approvedTools])];
+
+  // If agents are configured, merge their allowed tools
+  let agentTools = [];
+  let agentModel = null;
+  if (agents.length === 1) {
+    agentTools = agents[0].allowedTools || [];
+    agentModel = agents[0].model;
+  } else if (agents.length > 1) {
+    // Multi-agent: orchestrator needs Agent tool + union of all agent tools
+    agentTools = ['Agent', ...new Set(agents.flatMap(a => a.allowedTools || []))];
+    agentModel = agents[0].model; // orchestrator model
+  }
+
+  const baseTools = agentTools.length ? agentTools : (bodyAllowedTools?.length ? bodyAllowedTools : DEFAULT_ALLOWED_TOOLS);
+
+  // Auto-add a wildcard per MCP server so tasks always have access to MCP tools
+  let mcpWildcards = [];
+  if (fs.existsSync(MCP_CONFIG)) {
+    try {
+      const mcpCfg = JSON.parse(fs.readFileSync(MCP_CONFIG, 'utf8'));
+      // Only include MCP wildcards for agents that have useMcp enabled (or when no agents)
+      const includeMcp = !agents.length || agents.some(a => a.useMcp !== false);
+      if (includeMcp) mcpWildcards = Object.keys(mcpCfg.mcpServers || {}).map(s => `mcp__${s}__*`);
+    } catch {}
+  }
+
+  const allAllowedTools = [...new Set([...baseTools, ...approvedTools, ...mcpWildcards])];
   writeLine(logStream, `Allowed tools: ${allAllowedTools.join(', ')}`);
   writeLine(logStream, `MCP config:    ${fs.existsSync(MCP_CONFIG) ? MCP_CONFIG : '(none)'}`);
   writeLine(logStream);
 
   try {
-    const { text: raw, permissionDenials } = await runClaude(prompt, logStream, allAllowedTools);
+    const { text: raw, permissionDenials } = await runClaude(prompt, logStream, allAllowedTools, agentModel);
 
     // Permission denials take priority over whatever Claude reported
     if (permissionDenials.length > 0) {

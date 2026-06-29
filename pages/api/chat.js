@@ -7,12 +7,7 @@ const TIMEOUT_MS   = 300_000;
 
 // All MCP tools the assistant is allowed to call — no file-system tools in chat.
 const ALLOWED_TOOLS = [
-  'mcp__aiops__list_projects',
-  'mcp__aiops__get_project_tasks',
-  'mcp__aiops__search_tasks',
-  'mcp__aiops__get_daily_tasks',
-  'mcp__aiops__get_ai_queue',
-  'mcp__aiops__get_reminders',
+  'mcp__aiops__*',
 ].join(',');
 
 const SYSTEM = `You are a helpful AI assistant embedded in AIOps Workbench, a project management tool.
@@ -23,8 +18,9 @@ You have access to live workspace data through these tools:
 - search_tasks        — search across all projects by keyword, assignee, bucket, or status
 - get_daily_tasks     — see recurring daily tasks (schedule, assignee, time)
 - get_ai_queue        — see recent AI execution history (completions, issues, pending approvals)
+- and others
 
-Use tools proactively whenever the user's question involves workspace data. Be concise and conversational — this is a chat, not a report. Respond in plain text; avoid markdown headers and bullet walls.`;
+Use tools proactively whenever the user's question involves workspace data. Be concise and conversational — this is a chat, not a report. Respond in simple markdown.`;
 
 function buildPrompt(messages) {
   const history = messages

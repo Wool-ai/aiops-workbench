@@ -15,6 +15,7 @@
   width: 272px;
   flex-shrink: 0;
   border-right: 1px solid var(--border);
+  background: var(--surface);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -24,15 +25,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 16px 12px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--surface2) 0%, var(--surface) 100%);
   flex-shrink: 0;
 }
 
 .asideTitle {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text3);
 }
 
 .addBtn {
@@ -40,13 +44,13 @@
   align-items: center;
   gap: 5px;
   background: var(--accent-glow);
-  border: 1px solid rgba(var(--accent-rgb, 108, 92, 231), 0.3);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
   color: var(--accent);
   border-radius: var(--radius-sm);
   padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 500;
-  transition: background 0.15s;
+  font-size: 11.5px;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s;
 }
 
 .addBtn:hover {
@@ -80,11 +84,12 @@
 }
 
 .groupCount {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text3);
   background: var(--surface3);
-  border-radius: 10px;
-  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1px 7px;
 }
 
 .groupEmpty {
@@ -100,19 +105,26 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px 6px 16px;
+  padding: 9px 12px 9px 16px;
   cursor: pointer;
   transition: background 0.12s;
   border-radius: 0;
+  border-bottom: 1px solid var(--border);
 }
 
 .tlRow:hover {
   background: var(--surface2);
 }
 
+.tlRowActive {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 8%, var(--surface2)), var(--surface2));
+  border-left: 2px solid var(--accent);
+  padding-left: 14px;
+}
+
 .tlRowDone .tlName {
   text-decoration: line-through;
-  opacity: 0.5;
+  opacity: 0.4;
 }
 
 .tlDot {
@@ -136,6 +148,7 @@
   background: var(--done-c);
   border-color: var(--done-c);
   color: var(--btn-primary-text);
+  box-shadow: 0 0 5px color-mix(in srgb, var(--done-c) 40%, transparent);
 }
 
 .tlInfo {
@@ -147,7 +160,8 @@
 }
 
 .tlName {
-  font-size: 12px;
+  font-size: 12.5px;
+  font-weight: 500;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
@@ -164,9 +178,9 @@
 }
 
 .tlTime {
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--text3);
-  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-family: var(--font-mono);
   flex-shrink: 0;
 }
 
@@ -178,14 +192,16 @@
   flex-direction: column;
   overflow: hidden;
   min-width: 0;
+  background: var(--surface2);
 }
 
 .calHead {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 20px 13px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--surface2) 0%, var(--surface) 100%);
   flex-shrink: 0;
   gap: 16px;
 }
@@ -331,7 +347,7 @@
   padding: 6px 12px 0 0;
   text-align: right;
   font-size: 10px;
-  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-family: var(--font-mono);
   color: var(--text3);
   line-height: 1;
   margin-top: -1px;
@@ -402,6 +418,7 @@
   background: var(--done-c);
   border-color: var(--done-c);
   color: var(--btn-primary-text);
+  box-shadow: 0 0 5px color-mix(in srgb, var(--done-c) 40%, transparent);
 }
 
 .chipContent {
@@ -412,7 +429,7 @@
 
 .chipName {
   display: block;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 500;
   color: var(--text);
   white-space: nowrap;
@@ -444,9 +461,9 @@
 }
 
 .chipTime {
-  font-size: 10px;
+  font-size: 11.5px;
   color: var(--text3);
-  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-family: var(--font-mono);
 }
 
 .chipRun {
@@ -499,14 +516,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 20px 16px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--surface2) 0%, var(--surface) 100%);
 }
 
 .epTitle {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
-  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text3);
 }
 
 .epClose {
@@ -539,18 +559,18 @@
 }
 
 .fl {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10.5px;
+  font-weight: 700;
   color: var(--text3);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .fi {
-  background: var(--surface2);
-  border: 1px solid var(--border2);
+  background: var(--surface3);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 8px 10px;
+  padding: 7px 10px;
   font-size: 13px;
   color: var(--text);
   font-family: inherit;
@@ -560,14 +580,14 @@
 .fi:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
+  box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
 .ft {
-  background: var(--surface2);
-  border: 1px solid var(--border2);
+  background: var(--surface3);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 8px 10px;
+  padding: 7px 10px;
   font-size: 13px;
   color: var(--text);
   font-family: inherit;
@@ -579,18 +599,18 @@
 .ft:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
+  box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
 .fsel {
-  background: var(--surface2);
-  border: 1px solid var(--border2);
+  background: var(--surface3);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 8px 10px;
+  padding: 7px 10px;
   font-size: 13px;
   color: var(--text);
   font-family: inherit;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -601,6 +621,7 @@
 .fsel:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
 .frow {
@@ -618,8 +639,8 @@
 
 .dayOpt {
   flex: 1;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
+  background: var(--surface3);
+  border: 1px solid var(--border);
   color: var(--text3);
   border-radius: var(--radius-sm);
   padding: 6px 4px;
@@ -657,21 +678,22 @@
   border: 1px solid rgba(240, 112, 112, 0.3);
   color: var(--danger, #f07070);
   border-radius: var(--radius-sm);
-  padding: 6px 14px;
+  padding: 5px 12px;
   font-size: 12px;
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s;
 }
 
 .delBtn:hover {
   background: rgba(240, 112, 112, 0.08);
+  border-color: rgba(240, 112, 112, 0.5);
 }
 
 .cancelBtn {
   background: transparent;
-  border: 1px solid var(--border2);
+  border: 1px solid var(--border);
   color: var(--text3);
   border-radius: var(--radius-sm);
-  padding: 6px 14px;
+  padding: 5px 12px;
   font-size: 12px;
   transition: color 0.15s, background 0.15s;
 }
@@ -683,12 +705,13 @@
 
 .saveBtn {
   background: var(--accent);
-  border: none;
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
   color: var(--btn-primary-text);
   border-radius: var(--radius-sm);
-  padding: 7px 18px;
+  padding: 5px 18px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
+  box-shadow: 0 0 8px var(--accent-glow);
   transition: background 0.15s, opacity 0.15s;
 }
 
@@ -700,4 +723,13 @@
 .saveBtn:not(:disabled):hover {
   background: var(--accent-hover, var(--accent));
   filter: brightness(1.1);
+}
+
+/* ── Empty state ──────────────────────────────────────────────────────────── */
+
+.emptyState {
+  padding: 60px 20px;
+  font-size: 12px;
+  color: var(--text3);
+  text-align: center;
 }

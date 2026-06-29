@@ -1,7 +1,7 @@
 .backlog {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 /* ── Project group ─────────────────────────────── */
@@ -12,16 +12,16 @@
   border-radius: var(--radius);
   width: 1000px;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.03);
 }
 
 .groupHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 13px 20px;
+  padding: 11px 18px;
   border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  background: linear-gradient(180deg, var(--surface2) 0%, var(--surface) 100%);
 }
 
 .groupLeft {
@@ -35,20 +35,21 @@
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  box-shadow: 0 0 6px currentColor;
 }
 
 .groupName {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text);
 }
 
 .groupCount {
-  font-size: 12px;
+  font-size: 10px;
   color: var(--text3);
   background: var(--surface3);
   border: 1px solid var(--border);
-  padding: 2px 8px;
+  padding: 1px 7px;
   border-radius: 20px;
   font-variant-numeric: tabular-nums;
 }
@@ -67,7 +68,7 @@
   border: 1px solid var(--border);
   color: var(--text3);
   border-radius: var(--radius-sm);
-  padding: 5px 10px;
+  padding: 5px 11px;
   font-size: 12px;
   font-weight: 500;
   transition: color 0.15s, background 0.15s, border-color 0.15s;
@@ -81,11 +82,11 @@
 
 .addTaskBtn {
   background: transparent;
-  border: 1px solid var(--border2);
-  color: var(--text2);
+  border: 1px solid var(--border);
+  color: var(--text3);
   border-radius: var(--radius-sm);
-  padding: 5px 10px;
-  font-size: 12px;
+  padding: 4px 10px;
+  font-size: 11.5px;
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -96,7 +97,7 @@
 .addTaskBtn:hover {
   background: var(--accent-glow);
   color: var(--accent);
-  border-color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 /* ── Column headings ───────────────────────────── */
@@ -104,8 +105,8 @@
 .colHeadings {
   display: grid;
   grid-template-columns: 1fr 100px 140px 160px;
-  padding: 7px 20px;
   background: var(--surface2);
+  padding: 6px 18px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -114,11 +115,12 @@
 }
 
 .colHead {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10.5px;
+  font-weight: 700;
   color: var(--text3);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  font-family: var(--font-mono);
 }
 
 /* ── Task rows ─────────────────────────────────── */
@@ -132,8 +134,8 @@
   display: grid;
   grid-template-columns: 1fr 100px 140px 160px;
   align-items: center;
-  padding: 0 20px;
-  min-height: 48px;
+  padding: 0 18px;
+  min-height: 44px;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
   transition: background 0.12s;
@@ -194,8 +196,8 @@
 .priorityChip {
   font-size: 10px;
   font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 10px;
+  padding: 2px 7px;
+  border-radius: var(--radius-xs);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -217,10 +219,10 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 8px 4px 7px;
-  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--radius-xs);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -564,7 +566,7 @@
 .empty {
   text-align: center;
   padding: 80px 20px;
-  font-size: 14px;
+  font-size: 12px;
   color: var(--text3);
 }
 

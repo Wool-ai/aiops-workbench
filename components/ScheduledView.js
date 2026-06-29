@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { describeSchedule } from '../lib/scheduleUtils';
 import styles from '../styles/ScheduledView.module.css';
 
@@ -30,6 +30,7 @@ const EMPTY_FORM = {
   projectName: '',
   schedule: { type: 'daily', time: '09:00', day: 'monday', intervalMinutes: 60 },
   allowedTools: [...DEFAULT_TOOLS],
+  agentIds: [],
 };
 
 function formatRelative(iso) {
@@ -59,9 +60,27 @@ function ScheduleForm({ initial, projects, onSave, onCancel, headerless }) {
 
   const [form, setForm] = useState(initForm(initial));
   const [customToolInput, setCustomToolInput] = useState('');
+  const [mcpServers, setMcpServers] = useState([]);
+  const [templates, setTemplates] = useState([]);
+  const [availableAgents, setAvailableAgents] = useState([]);
 
   // Reset when switching between new/edit
   useEffect(() => { setForm(initForm(initial)); setCustomToolInput(''); }, [initial]);
+
+  useEffect(() => {
+    fetch('/api/mcp-servers')
+      .then(r => r.json())
+      .then(d => setMcpServers(Object.keys(d.mcpServers || {})))
+      .catch(() => {});
+    fetch('/api/templates')
+      .then(r => r.json())
+      .then(d => setTemplates(Array.isArray(d) ? d : []))
+      .catch(() => {});
+    fetch('/api/agents')
+      .then(r => r.json())
+      .then(d => setAvailableAgents(Array.isArray(d) ? d : []))
+      .catch(() => {});
+  }, []);
 
   function set(key, val) { setForm(f => ({ ...f, [key]: val })); }
   function setSchedule(key, val) { setForm(f => ({ ...f, schedule: { ...f.schedule, [key]: val } })); }
@@ -124,7 +143,25 @@ function ScheduleForm({ initial, projects, onSave, onCancel, headerless }) {
         </div>
 
         <div className={styles.formField}>
-          <label className={styles.label}>Task prompt</label>
+          <div className={styles.promptLabelRow}>
+            <label className={styles.label}>Task prompt</label>
+            {templates.length > 0 && (
+              <select
+                className={styles.templateSelect}
+                defaultValue=""
+                onChange={e => {
+                  const tpl = templates.find(t => t.id === e.target.value);
+                  if (tpl) set('prompt', tpl.content);
+                  e.target.value = '';
+                }}
+              >
+                <option value="" disabled>Insert template…</option>
+                {templates.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
           <textarea
             className={styles.textarea}
             value={form.prompt}
@@ -200,6 +237,44 @@ function ScheduleForm({ initial, projects, onSave, onCancel, headerless }) {
           </div>
         )}
 
+        {availableAgents.length > 0 && (
+          <div className={styles.formField}>
+            <label className={styles.label}>
+              Agents
+              {(form.agentIds || []).length > 1 && <span className={styles.agentOrchestratorNote}> — orchestration mode</span>}
+            </label>
+            <div className={styles.toolsGrid}>
+              {availableAgents.map(agent => {
+                const checked = (form.agentIds || []).includes(agent.id);
+                return (
+                  <label
+                    key={agent.id}
+                    className={`${styles.toolChk} ${styles.toolChkMcp} ${checked ? styles.toolChkMcpOn : ''}`}
+                    title={agent.description || agent.role}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => {
+                        const ids = form.agentIds || [];
+                        setForm(f => ({
+                          ...f,
+                          agentIds: ids.includes(agent.id) ? ids.filter(id => id !== agent.id) : [...ids, agent.id],
+                        }));
+                      }}
+                    />
+                    <span className={styles.toolChkName}>{agent.name}</span>
+                    <span className={styles.toolChkExtra}>{agent.role}</span>
+                  </label>
+                );
+              })}
+            </div>
+            <span className={styles.toolsHint}>
+              Select one agent to run it directly, or multiple agents to enable orchestration mode where the first agent coordinates the rest.
+            </span>
+          </div>
+        )}
+
         <div className={styles.formField}>
           <label className={styles.label}>Tool permissions</label>
           <div className={styles.toolsGrid}>
@@ -222,10 +297,35 @@ function ScheduleForm({ initial, projects, onSave, onCancel, headerless }) {
               );
             })}
           </div>
-          {/* Custom tool tags (MCP servers, etc.) */}
-          {form.allowedTools.filter(t => !ALL_TOOLS.find(a => a.name === t)).length > 0 && (
+          {mcpServers.length > 0 && (
+            <>
+              <span className={styles.mcpSectionLabel}>MCP Servers</span>
+              <div className={styles.toolsGrid}>
+                {mcpServers.map(srv => {
+                  const wildcard = `mcp__${srv}__*`;
+                  const checked = form.allowedTools.includes(wildcard);
+                  return (
+                    <label
+                      key={srv}
+                      className={`${styles.toolChk} ${styles.toolChkMcp} ${checked ? styles.toolChkMcpOn : ''}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleTool(wildcard)}
+                      />
+                      <span className={styles.toolChkName}>{srv}</span>
+                      <span className={styles.toolChkExtra}>mcp</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </>
+          )}
+          {/* Custom tool tags for specific tool names not in the grids above */}
+          {form.allowedTools.filter(t => !ALL_TOOLS.find(a => a.name === t) && !mcpServers.includes(t.replace(/^mcp__(.+)__\*$/, '$1'))).length > 0 && (
             <div className={styles.customTagsRow}>
-              {form.allowedTools.filter(t => !ALL_TOOLS.find(a => a.name === t)).map(name => (
+              {form.allowedTools.filter(t => !ALL_TOOLS.find(a => a.name === t) && !mcpServers.includes(t.replace(/^mcp__(.+)__\*$/, '$1'))).map(name => (
                 <span key={name} className={styles.customTag}>
                   {name}
                   <button
@@ -244,7 +344,7 @@ function ScheduleForm({ initial, projects, onSave, onCancel, headerless }) {
               value={customToolInput}
               onChange={e => setCustomToolInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomTool(); } }}
-              placeholder="mcp__server__tool or custom tool name…"
+              placeholder="mcp__server__specific_tool or custom name…"
             />
             <button
               type="button"
@@ -254,7 +354,7 @@ function ScheduleForm({ initial, projects, onSave, onCancel, headerless }) {
             >Add</button>
           </div>
           <span className={styles.toolsHint}>
-            {form.allowedTools.length} tool{form.allowedTools.length !== 1 ? 's' : ''} allowed · Type a custom name to add MCP server tools (e.g. <code>mcp__aiops__get_tasks</code>)
+            {form.allowedTools.length} tool{form.allowedTools.length !== 1 ? 's' : ''} allowed
           </span>
         </div>
       </div>

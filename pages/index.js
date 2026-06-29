@@ -11,6 +11,9 @@ import ChatBot from '../components/ChatBot';
 import WorkspaceModal from '../components/WorkspaceModal';
 import DashboardView from '../components/DashboardView';
 import ScheduledView from '../components/ScheduledView';
+import MCPView from '../components/MCPView';
+import SkillsView from '../components/SkillsView';
+import AgentsView from '../components/AgentsView';
 import { ASSIGNEES, uid } from '../lib/data';
 import styles from '../styles/Home.module.css';
 
@@ -42,6 +45,18 @@ const VIEW_META = {
   scheduled: {
     label: 'Scheduled',
     icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><polyline points="8 14 11 17 16 12"/></svg>,
+  },
+  agents: {
+    label: 'AI Agents',
+    icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/><circle cx="19" cy="19" r="3"/><line x1="19" y1="16" x2="19" y2="22"/><line x1="16" y1="19" x2="22" y2="19"/></svg>,
+  },
+  skills: {
+    label: 'Skills & Templates',
+    icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>,
+  },
+  mcp: {
+    label: 'MCP Servers',
+    icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6" strokeWidth="2.5" strokeLinecap="round"/><line x1="6" y1="18" x2="6.01" y2="18" strokeWidth="2.5" strokeLinecap="round"/></svg>,
   },
 };
 
@@ -84,6 +99,18 @@ export default function Home() {
       })
       .catch(console.error)
       .finally(() => setIsLoading(false));
+  }, []);
+
+  // Re-sync projects/dailyTasks/reminders from disk after an AI run — MCP tools
+  // write directly to data.json, so we must reload or the debounce-save will
+  // overwrite those changes with the stale in-memory state.
+  const reloadFromDisk = useCallback(async () => {
+    try {
+      const { projects: raw, dailyTasks: rawDaily, reminders: rawReminders } = await loadData();
+      setProjects((raw || []).map(p => ({ ...p, buckets: p.buckets || [] })));
+      setDailyTasks(rawDaily || []);
+      setReminders(rawReminders || []);
+    } catch { /* non-fatal */ }
   }, []);
 
   // Debounce-save to data.json on every projects/notifications change (skip while loading)
@@ -138,10 +165,12 @@ export default function Home() {
                 projectName: s.projectName || 'Scheduled',
                 bucket: '',
                 allowedTools: s.allowedTools?.length ? s.allowedTools : undefined,
+                agentIds: s.agentIds?.length ? s.agentIds : undefined,
               }),
             })
               .then(r => r.json())
-              .then(notif => {
+              .then(async notif => {
+                await reloadFromDisk();
                 setNotifications(prev => [
                   { ...notif, scheduled: true, scheduleId: s.id },
                   ...prev.filter(n => n.id !== tempId),
@@ -160,7 +189,7 @@ export default function Home() {
     tick();
     const interval = setInterval(tick, 60_000);
     return () => clearInterval(interval);
-  }, []);
+  }, [reloadFromDisk]);
 
   const totalTasks = projects.reduce((sum, p) => sum + p.tasks.length, 0);
   const doneTasks = projects.reduce((sum, p) => sum + p.tasks.filter(t => t.col === 'done').length, 0);
@@ -417,7 +446,7 @@ export default function Home() {
     });
   }, []);
 
-  const runWithAI = useCallback(async (task, projectId, allowedTools) => {
+  const runWithAI = useCallback(async (task, projectId, allowedTools, instructions, agentIds) => {
     const project = projects.find(p => p.id === projectId);
     if (!project) return;
     const tempId = 'processing-' + Date.now();
@@ -438,9 +467,10 @@ export default function Home() {
       const res = await fetch('/api/ai-process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task, projectId, projectName: project.name, bucket: task.bucket || '', allowedTools: allowedTools?.length ? allowedTools : undefined }),
+        body: JSON.stringify({ task, projectId, projectName: project.name, bucket: task.bucket || '', allowedTools: allowedTools?.length ? allowedTools : undefined, instructions: instructions || undefined, agentIds: agentIds?.length ? agentIds : undefined }),
       });
       const notif = await res.json();
+      await reloadFromDisk();
       setNotifications(prev => [notif, ...prev.filter(n => n.id !== tempId)]);
       applyAIResult(notif);
       setActiveView('queue');
@@ -449,7 +479,7 @@ export default function Home() {
         n.id === tempId ? { ...n, type: 'issue', message: 'AI processing failed. Please try again.' } : n
       ));
     }
-  }, [projects, applyAIResult]);
+  }, [projects, applyAIResult, reloadFromDisk]);
 
   const runAllWithAI = useCallback(async (projectId) => {
     const project = projects.find(p => p.id === projectId);
@@ -494,12 +524,13 @@ export default function Home() {
         }),
       });
       const newNotif = await res.json();
+      await reloadFromDisk();
       setNotifications(prev => [newNotif, ...prev.filter(n => n.id !== tempId)]);
       applyAIResult(newNotif);
     } catch {
       setNotifications(prev => prev.filter(n => n.id !== tempId));
     }
-  }, [projects, applyAIResult]);
+  }, [projects, applyAIResult, reloadFromDisk]);
 
   const markNotifRead = useCallback((id) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
@@ -521,12 +552,13 @@ export default function Home() {
         body: JSON.stringify({ task, projectId: notif.projectId, projectName: notif.projectName, bucket: notif.bucket, replyContext: { reply: replyText, previousMessage: notif.message } }),
       });
       const newNotif = await res.json();
+      await reloadFromDisk();
       setNotifications(prev => [newNotif, ...prev.filter(n => n.id !== tempId)]);
       applyAIResult(newNotif);
     } catch {
       setNotifications(prev => prev.filter(n => n.id !== tempId));
     }
-  }, [projects, applyAIResult]);
+  }, [projects, applyAIResult, reloadFromDisk]);
 
   const activeProject = activeTask
     ? projects.find(p => p.id === activeTask.projectId)
@@ -545,10 +577,13 @@ export default function Home() {
       <div className={styles.content}>
       <header className={styles.topbar}>
         <div className={styles.topbarTop}>
-          {/* App name */}
+          {/* App name — terminal breadcrumb */}
           <div className={styles.appName}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="18"/><rect x="14" y="3" width="7" height="10"/><rect x="14" y="17" width="7" height="4"/></svg>
-            AIOps Workbench
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <polygon points="12 2 22 7 22 17 12 22 2 17 2 7" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/>
+              <circle cx="12" cy="12" r="2" fill="currentColor"/>
+            </svg>
+            aiops
           </div>
 
           <span className={styles.topbarDivider} />
@@ -662,7 +697,7 @@ export default function Home() {
         )}
       </header>
 
-      <main className={`${styles.main} ${activeView === 'dashboard' ? styles.mainDashboard : activeView === 'scheduled' ? styles.mainScheduled : (activeView === 'queue' || activeView === 'reminders') ? styles.mainQueue : activeView === 'daily' ? styles.mainDaily : ''}`}>
+      <main className={`${styles.main} ${activeView === 'dashboard' ? styles.mainDashboard : activeView === 'scheduled' ? styles.mainScheduled : (activeView === 'queue' || activeView === 'reminders') ? styles.mainQueue : activeView === 'daily' ? styles.mainDaily : (activeView === 'mcp' || activeView === 'skills' || activeView === 'agents') ? styles.mainScheduled : ''}`}>
         {isLoading ? (
           <div className={styles.loadingState}>
             <div className={styles.loadingSpinner} />
@@ -711,6 +746,12 @@ export default function Home() {
               if (task) openTask(task, projectId);
             }}
           />
+        ) : activeView === 'agents' ? (
+          <AgentsView />
+        ) : activeView === 'skills' ? (
+          <SkillsView />
+        ) : activeView === 'mcp' ? (
+          <MCPView />
         ) : activeView === 'backlog' ? (
           <BacklogView
             displayProjects={displayProjects}
@@ -761,7 +802,7 @@ export default function Home() {
             onSave={saveTask}
             onDelete={deleteTask}
             onClose={() => setActiveTask(null)}
-            onRunWithAI={(task, allowedTools) => runWithAI(task, activeTask.projectId, allowedTools)}
+            onRunWithAI={(task, allowedTools, instructions, agentIds) => runWithAI(task, activeTask.projectId, allowedTools, instructions, agentIds)}
             onGoToQueue={() => { setActiveTask(null); setActiveView('queue'); }}
             onOpenWorkspace={(bucketName) => setWorkspaceTarget({ project: activeProject, bucketName })}
           />

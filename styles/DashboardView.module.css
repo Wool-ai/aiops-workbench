@@ -3,7 +3,7 @@
 .dash {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
   width: 100%;
   min-width: 0;
   padding-bottom: 56px;
@@ -21,22 +21,24 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
+  padding: 7px 13px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--ac, var(--border2));
+  border: 1px solid color-mix(in srgb, var(--ac, var(--border2)) 40%, transparent);
   background: var(--ab, var(--surface2));
   color: var(--ac, var(--text2));
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
   transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s;
+  backdrop-filter: blur(8px);
 }
 
 .alertChip:hover {
   opacity: 0.85;
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35),
+              0 0 0 1px color-mix(in srgb, var(--ac, var(--border2)) 60%, transparent);
 }
 
 .alertChip:active {
@@ -44,17 +46,18 @@
 }
 
 .alertDot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: currentColor;
   flex-shrink: 0;
+  box-shadow: 0 0 5px currentColor;
   animation: pulse 2s ease-in-out infinite;
 }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
-  50%       { opacity: 0.4; }
+  50%       { opacity: 0.35; }
 }
 
 /* ── KPI strip ────────────────────────────────────────────────────────────── */
@@ -62,7 +65,7 @@
 .kpiRow {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
+  gap: 10px;
 }
 
 @media (max-width: 1240px) {
@@ -74,19 +77,19 @@
 
 .kpi {
   position: relative;
-  background: var(--surface);
+  background: linear-gradient(160deg, var(--surface2) 0%, var(--surface) 100%);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px 18px 15px;
+  padding: 15px 16px 14px;
   display: flex;
   flex-direction: column;
   gap: 5px;
   overflow: hidden;
-  transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28), 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s, background 0.15s;
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.04);
 }
 
-/* Bottom accent line — subtle always, full on hover */
+/* Accent bottom line — dim at rest, vivid on hover */
 .kpi::after {
   content: '';
   position: absolute;
@@ -94,9 +97,23 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: var(--acc, var(--accent));
-  opacity: 0.2;
+  background: linear-gradient(90deg, transparent, var(--acc, var(--accent)), transparent);
+  opacity: 0.25;
   transition: opacity 0.2s;
+}
+
+/* Subtle top-right corner glow */
+.kpi::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--acc, var(--accent)) 15%, transparent), transparent 70%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s;
 }
 
 .kpiClickable {
@@ -105,17 +122,23 @@
 
 .kpiClickable:hover {
   border-color: var(--border2);
+  background: linear-gradient(160deg, var(--surface3) 0%, var(--surface2) 100%);
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--border2);
+  box-shadow: var(--shadow-md), 0 0 0 1px var(--border2),
+              inset 0 1px 0 rgba(255,255,255,0.06);
 }
 
 .kpiClickable:hover::after {
   opacity: 1;
 }
 
+.kpiClickable:hover::before {
+  opacity: 1;
+}
+
 .kpiClickable:active {
   transform: translateY(0);
-  box-shadow: none;
+  box-shadow: var(--shadow-sm);
 }
 
 .kpiHeader {
@@ -127,37 +150,38 @@
 }
 
 .kpiLabel {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--text3);
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.08em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .kpiIconBg {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 8px;
-  background: var(--surface2);
+  background: var(--surface3);
   border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   color: var(--acc, var(--accent));
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
 
 .kpiClickable:hover .kpiIconBg {
-  background: var(--surface3);
-  border-color: var(--border2);
+  background: color-mix(in srgb, var(--acc, var(--accent)) 10%, var(--surface3));
+  border-color: color-mix(in srgb, var(--acc, var(--accent)) 30%, var(--border));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--acc, var(--accent)) 20%, transparent);
 }
 
 .kpiValue {
-  font-size: 30px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--text);
   line-height: 1;
@@ -165,10 +189,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Mini progress bar (shown when progress prop is passed) */
 .kpiMiniBar {
-  height: 3px;
-  background: var(--surface3);
+  height: 2px;
+  background: var(--surface4);
   border-radius: 2px;
   overflow: hidden;
   margin-top: 3px;
@@ -177,7 +200,7 @@
 
 .kpiMiniBarFill {
   height: 100%;
-  background: var(--acc, var(--accent));
+  background: linear-gradient(90deg, var(--acc, var(--accent)), color-mix(in srgb, var(--acc, var(--accent)) 70%, #fff));
   border-radius: 2px;
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -190,8 +213,8 @@
 
 .kpiArrow {
   position: absolute;
-  bottom: 14px;
-  right: 14px;
+  bottom: 13px;
+  right: 13px;
   color: var(--text3);
   opacity: 0;
   transition: opacity 0.15s, color 0.15s;
@@ -206,8 +229,8 @@
 
 .body {
   display: grid;
-  grid-template-columns: 1fr 310px;
-  gap: 14px;
+  grid-template-columns: 1fr 300px;
+  gap: 12px;
   align-items: start;
 }
 
@@ -224,21 +247,21 @@
 .main {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   min-width: 0;
 }
 
 .side {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   min-width: 0;
 }
 
 .bottomRow {
   display: grid;
   grid-template-columns: 1fr 1.8fr;
-  gap: 14px;
+  gap: 12px;
   align-items: start;
 }
 
@@ -254,11 +277,16 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 18px 20px;
+  padding: 16px 18px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28), 0 1px 3px rgba(0, 0, 0, 0.2);
+  gap: 13px;
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.03);
+  transition: border-color 0.15s;
+}
+
+.card:hover {
+  border-color: var(--border2);
 }
 
 .cardHead {
@@ -275,17 +303,18 @@
 }
 
 .cardTitleIcon {
-  color: var(--text3);
+  color: var(--accent);
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  opacity: 0.7;
 }
 
 .cardTitle {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.1em;
   color: var(--text3);
 }
 
@@ -300,12 +329,13 @@
   font-weight: 500;
   padding: 0;
   cursor: pointer;
+  opacity: 0.75;
   transition: opacity 0.15s;
   white-space: nowrap;
 }
 
 .cardLink:hover {
-  opacity: 0.7;
+  opacity: 1;
 }
 
 /* ── Empty states ─────────────────────────────────────────────────────────── */
@@ -315,7 +345,7 @@
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  padding: 28px 12px;
+  padding: 26px 12px;
   color: var(--text3);
   font-size: 12px;
   text-align: center;
@@ -333,9 +363,15 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 14px 0;
+  padding: 12px 8px;
   border-bottom: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  margin: 0 -8px;
   transition: background 0.12s;
+}
+
+.projectRow:hover {
+  background: var(--surface2);
 }
 
 .projectRow:first-child {
@@ -354,14 +390,14 @@
 }
 
 .projectSwatch {
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
   border-radius: 3px;
   flex-shrink: 0;
 }
 
 .projectName {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text);
   flex: 1;
@@ -378,10 +414,10 @@
 }
 
 .pCountChip {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 600;
   padding: 2px 6px;
-  border-radius: 6px;
+  border-radius: 5px;
   white-space: nowrap;
 }
 
@@ -394,10 +430,10 @@
 }
 
 .projectPct {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  min-width: 34px;
+  min-width: 32px;
   text-align: right;
   flex-shrink: 0;
   transition: color 0.2s;
@@ -407,7 +443,7 @@
 
 .stackedBar {
   display: flex;
-  height: 6px;
+  height: 5px;
   border-radius: 3px;
   overflow: hidden;
   gap: 2px;
@@ -418,6 +454,11 @@
   height: 100%;
   border-radius: 2px;
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.85;
+}
+
+.stackedSeg:first-child {
+  opacity: 1;
 }
 
 .stackedEmpty {
@@ -438,7 +479,7 @@
 .barTrack {
   display: flex;
   align-items: flex-end;
-  gap: 6px;
+  gap: 5px;
   width: 100%;
 }
 
@@ -452,7 +493,7 @@
 }
 
 .barCount {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
   color: var(--text3);
   line-height: 1;
@@ -464,7 +505,7 @@
 
 .barFill {
   width: 100%;
-  max-width: 24px;
+  max-width: 22px;
   border-radius: 3px 3px 0 0;
   background: var(--surface4);
   transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -472,7 +513,7 @@
 
 .barFillToday {
   background: var(--accent);
-  box-shadow: 0 0 10px var(--accent-glow-strong);
+  box-shadow: 0 0 10px var(--accent-glow-strong), 0 -2px 6px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 .barAxis {
@@ -484,7 +525,7 @@
 
 .barDays {
   display: flex;
-  gap: 6px;
+  gap: 5px;
 }
 
 .barDay {
@@ -492,7 +533,7 @@
   text-align: center;
   font-size: 9px;
   color: var(--text3);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
 }
 
@@ -505,7 +546,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 4px;
+  padding-top: 5px;
 }
 
 .barTotal {
@@ -519,32 +560,17 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  max-height: 300px;
+  max-height: 290px;
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border2) transparent;
   margin: -4px;
   padding: 4px;
-}
-
-.feed::-webkit-scrollbar {
-  width: 4px;
-}
-
-.feed::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.feed::-webkit-scrollbar-thumb {
-  background: var(--border2);
-  border-radius: 2px;
 }
 
 .feedRow {
   display: flex;
   gap: 10px;
-  padding: 9px 8px;
-  border-radius: var(--radius-sm);
+  padding: 8px 8px;
+  border-radius: var(--radius-xs);
   transition: background 0.12s, opacity 0.15s;
   cursor: default;
 }
@@ -554,7 +580,7 @@
 }
 
 .feedRead {
-  opacity: 0.38;
+  opacity: 0.44;
 }
 
 .feedBar {
@@ -564,6 +590,12 @@
   flex-shrink: 0;
   align-self: stretch;
   min-height: 32px;
+  opacity: 0.7;
+}
+
+.feedRow:not(.feedRead) .feedBar {
+  opacity: 1;
+  box-shadow: 0 0 4px color-mix(in srgb, var(--row-accent, var(--border2)) 50%, transparent);
 }
 
 .feedBody {
@@ -587,7 +619,7 @@
   padding: 2px 6px;
   white-space: nowrap;
   flex-shrink: 0;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
@@ -597,6 +629,7 @@
   border-radius: 50%;
   background: var(--accent);
   flex-shrink: 0;
+  box-shadow: 0 0 5px var(--accent-glow-strong);
 }
 
 .feedTime {
@@ -663,7 +696,7 @@
 }
 
 .donutBig {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--text);
   line-height: 1;
@@ -674,7 +707,7 @@
   font-size: 9px;
   color: var(--text3);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
 }
 
 .donutLegend {
@@ -693,10 +726,11 @@
 }
 
 .legendDot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
+  box-shadow: 0 0 4px currentColor;
 }
 
 .legendLabel {
@@ -739,7 +773,7 @@
 }
 
 .miniRowDone {
-  opacity: 0.35;
+  opacity: 0.3;
 }
 
 .miniDot {
@@ -749,6 +783,7 @@
   background: var(--accent);
   flex-shrink: 0;
   margin-top: 5px;
+  box-shadow: 0 0 5px var(--accent-glow-strong);
 }
 
 .miniInfo {
@@ -792,21 +827,21 @@
 /* ── Daily check ──────────────────────────────────────────────────────────── */
 
 .dailyCheck {
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   border: 1.5px solid var(--border2);
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 1px;
-  transition: background 0.15s, border-color 0.15s;
+  margin-top: 2px;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
 
 .dailyChecked {
   background: var(--done-c);
   border-color: var(--done-c);
-  color: var(--btn-primary-text);
+  color: #000;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--done-c) 40%, transparent);
 }
-
