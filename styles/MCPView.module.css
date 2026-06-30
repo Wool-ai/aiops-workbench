@@ -415,6 +415,33 @@
   color: var(--text3);
 }
 
+.smitheryAuthor {
+  font-size: 10px;
+  color: var(--text3);
+  font-weight: 500;
+}
+
+.smitheryLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+  padding: 0 2px;
+}
+
+.smitheryLink {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  color: var(--accent);
+  text-decoration: none;
+  transition: opacity var(--transition-fast);
+  margin-top: 4px;
+}
+
+.smitheryLink:hover { opacity: 0.8; }
+
 .smitheryDocs {
   display: flex;
   align-items: center;
@@ -479,6 +506,11 @@
 /* ── Discover tab ────────────────────────────────── */
 
 .discoverPane {
+  display: flex;
+  flex-direction: column;
+}
+
+.discoverSection {
   display: flex;
   flex-direction: column;
 }

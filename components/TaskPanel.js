@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Avatar from './Avatar';
+import { executeTaskWithAgent } from '../lib/agent-executor';
 import { COLUMN_LABELS, COLUMNS, ASSIGNEES, PRIORITY_ORDER, PRIORITY_META } from '../lib/data';
 import styles from '../styles/TaskPanel.module.css';
 
@@ -24,7 +25,7 @@ const ALL_TOOLS = [
   { name: 'NotebookEdit', isDefault: false },
 ];
 
-export default function TaskPanel({ task, projectName, projectBuckets, onSave, onDelete, onClose, onRunWithAI, onGoToQueue, onOpenWorkspace }) {
+export default function TaskPanel({ task, projectName, projectBuckets, onSave, onDelete, onClose, onRunWithAI, onGoToQueue, onOpenWorkspace, onAgentResult }) {
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
   const [assignee, setAssignee] = useState('');
@@ -47,6 +48,9 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [availableAgents, setAvailableAgents] = useState([]);
   const [selectedAgentIds, setSelectedAgentIds] = useState([]);
+  const [agentRunning, setAgentRunning] = useState(false);
+  const [agentRunResult, setAgentRunResult] = useState(null);
+  const [executionMode, setExecutionMode] = useState('agent'); // 'agent' or 'custom'
   const nameRef = useRef(null);
 
   useEffect(() => {
@@ -60,8 +64,14 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
       .catch(() => {});
     fetch('/api/agents')
       .then(r => r.json())
-      .then(d => setAvailableAgents(Array.isArray(d) ? d : []))
-      .catch(() => {});
+      .then(d => {
+        setAvailableAgents(Array.isArray(d) ? d : []);
+        // Default to agent mode if agents available, otherwise custom
+        if (!Array.isArray(d) || d.length === 0) {
+          setExecutionMode('custom');
+        }
+      })
+      .catch(() => setExecutionMode('custom'));
   }, []);
 
   useEffect(() => {
@@ -136,6 +146,33 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
     const tpl = templates.find(t => t.id === selectedTemplate);
     onRunWithAI(updatedTask, allowedTools, tpl?.content || undefined, selectedAgentIds.length ? selectedAgentIds : undefined);
     setTimeout(() => setAiQueued(false), 3000);
+  }
+
+  async function handleRunAsAgent() {
+    if (selectedAgentIds.length !== 1 || agentRunning) return;
+    const agent = availableAgents.find(a => a.id === selectedAgentIds[0]);
+    if (!agent) return;
+
+    const updatedTask = { ...task, name: name.trim() || 'Untitled task', desc, assignee, col, bucket, dueDate, dueTime, priority, comments, subtasks };
+    onSave(updatedTask);
+    setAgentRunning(true);
+    setAgentRunResult(null);
+
+    try {
+      const result = await executeTaskWithAgent(
+        agent.id,
+        updatedTask.name,
+        updatedTask.desc,
+        projectName,
+        updatedTask.bucket,
+      );
+      setAgentRunResult(result);
+      if (onAgentResult) onAgentResult(result);
+    } catch (e) {
+      setAgentRunResult({ type: 'issue', message: e.message });
+    } finally {
+      setAgentRunning(false);
+    }
   }
 
   function toggleTool(name) {
@@ -442,72 +479,124 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
 
       {onRunWithAI && (
         <div className={styles.aiSection}>
-          <div className={styles.aiTopRow}>
-            <button
-              className={`${styles.aiBtn} ${aiQueued ? styles.aiBtnQueued : ''}`}
-              onClick={handleRunWithAI}
-              disabled={aiQueued}
-            >
-              {aiQueued ? (
-                <>
-                  <svg className={styles.aiSpinner} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                  </svg>
-                  Queued for AI…
-                </>
-              ) : (
-                <>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-                  </svg>
-                  Run with AI
-                </>
-              )}
-            </button>
-            {templates.length > 0 && (
-              <select
-                className={styles.aiTemplateSelect}
-                value={selectedTemplate}
-                onChange={e => setSelectedTemplate(e.target.value)}
-                title="Attach a prompt template"
+          {availableAgents.length > 0 && (
+            <div className={styles.executionModeToggle}>
+              <button
+                className={`${styles.modeBtn} ${executionMode === 'agent' ? styles.modeBtnActive : ''}`}
+                onClick={() => setExecutionMode('agent')}
               >
-                <option value="">No template</option>
-                {templates.map(t => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-            )}
-            <span className={styles.aiHint}>Queue tab</span>
-            <button
-              type="button"
-              className={`${styles.aiToolsToggle} ${selectedAgentIds.length ? styles.aiToolsToggleOn : ''}`}
-              onClick={() => setShowToolConfig(v => !v)}
-              title="Select agents"
-              style={{ display: availableAgents.length ? undefined : 'none' }}
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/>
-              </svg>
-              Agents
-              {selectedAgentIds.length > 0 && (
-                <span className={styles.aiToolsBadge}>{selectedAgentIds.length}</span>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/>
+                </svg>
+                Run as Agent
+              </button>
+              <button
+                className={`${styles.modeBtn} ${executionMode === 'custom' ? styles.modeBtnActive : ''}`}
+                onClick={() => setExecutionMode('custom')}
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
+                </svg>
+                Custom Tools
+              </button>
+            </div>
+          )}
+
+          {executionMode === 'agent' ? (
+            <div className={styles.aiTopRow}>
+              {availableAgents.length > 0 && (
+                <select
+                  className={styles.agentSelect}
+                  value={selectedAgentIds[0] || ''}
+                  onChange={e => setSelectedAgentIds(e.target.value ? [e.target.value] : [])}
+                  title="Select an agent"
+                >
+                  <option value="">Choose an agent…</option>
+                  {availableAgents.map(a => (
+                    <option key={a.id} value={a.id}>{a.name}</option>
+                  ))}
+                </select>
               )}
-            </button>
-            <button
-              type="button"
-              className={`${styles.aiToolsToggle} ${showToolConfig ? styles.aiToolsToggleOn : ''}`}
-              onClick={() => setShowToolConfig(v => !v)}
-              title="Configure tool permissions"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
-              </svg>
-              Tools
-              {allowedTools.length !== DEFAULT_TOOLS.length && (
-                <span className={styles.aiToolsBadge}>{allowedTools.length}</span>
+              <button
+                className={`${styles.aiBtn} ${agentRunning ? styles.aiBtnQueued : ''}`}
+                onClick={handleRunAsAgent}
+                disabled={agentRunning || !selectedAgentIds.length}
+              >
+                {agentRunning ? (
+                  <>
+                    <svg className={styles.aiSpinner} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                    </svg>
+                    Running…
+                  </>
+                ) : (
+                  <>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                    </svg>
+                    Run
+                  </>
+                )}
+              </button>
+              {agentRunResult && (
+                <div className={`${styles.agentResultStatus} ${styles[`agentResultStatus_${agentRunResult.type}`]}`}>
+                  {agentRunResult.type === 'completed' ? '✓' : agentRunResult.type === 'issue' ? '⚠' : '?'} {agentRunResult.message || agentRunResult.type}
+                </div>
               )}
-            </button>
-          </div>
+            </div>
+          ) : (
+            <div className={styles.aiTopRow}>
+              <button
+                className={`${styles.aiBtn} ${aiQueued ? styles.aiBtnQueued : ''}`}
+                onClick={handleRunWithAI}
+                disabled={aiQueued}
+              >
+                {aiQueued ? (
+                  <>
+                    <svg className={styles.aiSpinner} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                    </svg>
+                    Queued for AI…
+                  </>
+                ) : (
+                  <>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                    </svg>
+                    Run with AI
+                  </>
+                )}
+              </button>
+              {templates.length > 0 && (
+                <select
+                  className={styles.aiTemplateSelect}
+                  value={selectedTemplate}
+                  onChange={e => setSelectedTemplate(e.target.value)}
+                  title="Attach a prompt template"
+                >
+                  <option value="">No template</option>
+                  {templates.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              )}
+              <span className={styles.aiHint}>Queue tab</span>
+              <button
+                type="button"
+                className={`${styles.aiToolsToggle} ${showToolConfig ? styles.aiToolsToggleOn : ''}`}
+                onClick={() => setShowToolConfig(v => !v)}
+                title="Configure tool permissions"
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
+                </svg>
+                Tools
+                {allowedTools.length !== DEFAULT_TOOLS.length && (
+                  <span className={styles.aiToolsBadge}>{allowedTools.length}</span>
+                )}
+              </button>
+            </div>
+          )}
 
           {showToolConfig && (
             <div className={styles.aiToolConfig}>

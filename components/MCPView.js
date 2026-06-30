@@ -461,6 +461,106 @@ function ConfiguredTab({ servers, connected, onToggle, onRemove, onAddCustom }) 
   );
 }
 
+// ── Public MCP registry discovery ─────────────────────────────────────────────
+
+const OFFICIAL_MCP_SERVERS = [
+  { name: 'Filesystem', id: 'filesystem', description: 'Read/write local files and directories', npm: '@modelcontextprotocol/server-filesystem', repo: 'https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem' },
+  { name: 'Git', id: 'git', description: 'Read git repositories — commits, diffs, branches, file history', npm: '@modelcontextprotocol/server-git', repo: 'https://github.com/modelcontextprotocol/servers/tree/main/src/git' },
+  { name: 'GitHub', id: 'github', description: 'Manage repos, issues, PRs, files, and search code on GitHub', npm: '@modelcontextprotocol/server-github', repo: 'https://github.com/modelcontextprotocol/servers/tree/main/src/github' },
+  { name: 'GitLab', id: 'gitlab', description: 'Interact with GitLab repositories, issues, and merge requests', npm: '@modelcontextprotocol/server-gitlab', repo: 'https://github.com/modelcontextprotocol/servers/tree/main/src/gitlab' },
+  { name: 'SQLite', id: 'sqlite', description: 'Query and inspect SQLite databases', npm: '@modelcontextprotocol/server-sqlite', repo: 'https://github.com/modelcontextprotocol/servers/tree/main/src/sqlite' },
+  { name: 'PostgreSQL', id: 'postgres', description: 'Read-only access to PostgreSQL databases', npm: '@modelcontextprotocol/server-postgres', repo: 'https://github.com/modelcontextprotocol/servers/tree/main/src/postgres' },
+  { name: 'Brave Search', id: 'brave-search', description: 'Web and local search via the Brave Search API', npm: '@modelcontextprotocol/server-brave-search', repo: 'https://github.com/modelcontextprotocol/servers/tree/main/src/brave-search' },
+  { name: 'Fetch', id: 'fetch', description: 'Fetch web pages and convert them to Markdown', npm: '@modelcontextprotocol/server-fetch', repo: 'https://github.com/modelcontextprotocol/servers/tree/main/src/fetch' },
+  { name: 'Puppeteer', id: 'puppeteer', description: 'Browser automation — navigate pages, click, fill forms, take screenshots', npm: '@modelcontextprotocol/server-puppeteer', repo: 'https://github.com/modelcontextprotocol/servers/tree/main/src/puppeteer' },
+  { name: 'Slack', id: 'slack', description: 'Read channels, post messages, and search Slack workspaces', npm: '@modelcontextprotocol/server-slack', repo: 'https://github.com/modelcontextprotocol/servers/tree/main/src/slack' },
+  { name: 'Google Maps', id: 'google-maps', description: 'Geocoding, directions, place search, and distance calculations', npm: '@modelcontextprotocol/server-google-maps', repo: 'https://github.com/modelcontextprotocol/servers/tree/main/src/google-maps' },
+  { name: 'Memory', id: 'memory', description: 'Persistent key-value memory store for cross-session recall', npm: '@modelcontextprotocol/server-memory', repo: 'https://github.com/modelcontextprotocol/servers/tree/main/src/memory' },
+  { name: 'Sequential Thinking', id: 'sequential-thinking', description: 'Structured step-by-step reasoning for complex problems', npm: '@modelcontextprotocol/server-sequential-thinking', repo: 'https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking' },
+  { name: 'Everart', id: 'everart', description: 'AI image generation with multiple models', npm: '@everart-ai/mcp-server', repo: 'https://github.com/everart-ai/mcp-server' },
+  { name: 'Weather', id: 'weather', description: 'Real-time weather data and forecasts', npm: '@modelcontextprotocol/server-weather', repo: 'https://github.com/modelcontextprotocol/servers/tree/main/src/weather' },
+];
+
+function PublicRegistry({ onAdd }) {
+  const [query, setQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const debounceRef = useRef(null);
+
+  const filtered = query.toLowerCase() ? OFFICIAL_MCP_SERVERS.filter(s =>
+    s.name.toLowerCase().includes(query) ||
+    s.description.toLowerCase().includes(query) ||
+    s.id.includes(query)
+  ) : OFFICIAL_MCP_SERVERS;
+
+  function handleInput(e) {
+    const q = e.target.value;
+    setQuery(q);
+  }
+
+  return (
+    <div className={styles.smitherySection}>
+      <div className={styles.smitheryHeader}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}>
+          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input
+          className={styles.smitheryInput}
+          value={query}
+          onChange={handleInput}
+          placeholder="Search official MCP servers…"
+        />
+        {query && (
+          <button className={styles.discoverClear} onClick={() => setQuery('')}>×</button>
+        )}
+      </div>
+
+      {!loading && filtered.length === 0 && query && (
+        <div className={styles.smitheryHint}>
+          No servers match "{query}".
+        </div>
+      )}
+
+      {filtered.length > 0 && (
+        <div className={styles.smitheryResults}>
+          {filtered.map((server, i) => (
+            <div key={server.id} className={styles.smitheryCard}>
+              <div className={styles.smitheryCardLeft}>
+                <div className={styles.smitheryCardName}>
+                  <span className={styles.registryName}>{server.name}</span>
+                  <span className={styles.smitheryAuthor}>official</span>
+                </div>
+                {server.description && <p className={styles.smitheryCardDesc}>{server.description}</p>}
+                <a
+                  href={server.repo}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.smitheryLink}
+                >
+                  View on GitHub →
+                </a>
+              </div>
+              <button
+                className={styles.addBtn}
+                onClick={() => onAdd({
+                  id: server.id,
+                  name: server.name,
+                  description: server.description || '',
+                  type: 'stdio',
+                  config: { command: 'npx', args: ['-y', server.npm] },
+                  docs: server.repo,
+                  tags: [],
+                })}
+              >
+                Register
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── MCPJungle live tools viewer ───────────────────────────────────────────────
 
 function MCPJungleTools({ connected }) {
@@ -495,15 +595,12 @@ function MCPJungleTools({ connected }) {
   }
 
   if (!connected) {
-    return (
-      <div className={styles.smitheryHint}>
-        Connect MCPJungle at <code>localhost:8080</code> to see available tools from your registered servers.
-      </div>
-    );
+    return null;
   }
 
   return (
     <div className={styles.smitherySection}>
+      <div className={styles.smitheryLabel}>Your registered server tools</div>
       <div className={styles.smitheryHeader}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}>
           <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
@@ -513,7 +610,7 @@ function MCPJungleTools({ connected }) {
           className={styles.smitheryInput}
           value={query}
           onChange={handleInput}
-          placeholder="Search available tools from MCPJungle…"
+          placeholder="Search your registered tools…"
         />
         {loading && <span className={styles.smitherySpin} />}
         {query && !loading && (
@@ -527,7 +624,7 @@ function MCPJungleTools({ connected }) {
         <div className={styles.smitheryHint}>
           {query
             ? `No tools match "${query}".`
-            : 'No tools found. Register servers in the Configured tab to expose their tools here.'}
+            : 'No tools found. Register servers to expose their tools here.'}
         </div>
       )}
 
@@ -571,8 +668,17 @@ function DiscoverTab({ servers, connected, onAdd }) {
 
   return (
     <div className={styles.discoverPane}>
-      {/* Live MCPJungle tools at top */}
-      <MCPJungleTools connected={connected} />
+      {/* Public MCP registry discovery */}
+      <div className={styles.discoverSection}>
+        <PublicRegistry onAdd={onAdd} />
+      </div>
+
+      {/* Live MCPJungle tools if connected */}
+      {connected && (
+        <div className={styles.discoverSection}>
+          <MCPJungleTools connected={connected} />
+        </div>
+      )}
 
       <div className={styles.curatedDivider}>
         <span className={styles.curatedLabel}>Curated picks — register via MCPJungle</span>

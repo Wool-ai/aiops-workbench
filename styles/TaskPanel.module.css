@@ -572,6 +572,92 @@
   transition: border-color var(--transition), box-shadow var(--transition);
 }
 
+.agentResultStatus {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.agentResultStatus_completed {
+  background: color-mix(in srgb, var(--done-c) 12%, transparent);
+  color: var(--done-c);
+}
+
+.agentResultStatus_issue {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+}
+
+.agentResultStatus_human_input {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+
+/* ── Execution mode toggle ─────────────────────── */
+
+.executionModeToggle {
+  display: flex;
+  gap: 6px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modeBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text3);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.modeBtn:hover {
+  border-color: var(--border2);
+  color: var(--text2);
+  background: var(--surface4);
+}
+
+.modeBtnActive {
+  background: var(--accent-glow);
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  color: var(--accent);
+}
+
+.agentSelect {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text2);
+  font-size: 12px;
+  font-family: inherit;
+  padding: 6px 10px;
+  flex: 1;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.agentSelect:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.agentSelect option {
+  background: var(--surface);
+}
+
 .aiTemplateSelect:focus {
   outline: none;
   border-color: var(--accent);

@@ -595,25 +595,48 @@ export default function Home() {
               const FILE_OP = { Write: 'created', Edit: 'edited' };
               const op = FILE_OP[data.name];
               const path = data.input?.file_path;
-              const change = op && path
-                ? {
-                    op,
-                    path,
-                    content: data.input?.content,
-                    oldString: data.input?.old_string,
-                    newString: data.input?.new_string,
+
+              setNotifications(prev => prev.map(n => {
+                if (n.id !== tempId) return n;
+
+                if (op && path) {
+                  const fileChanges = [...(n.fileChanges || [])];
+                  const existingIdx = fileChanges.findIndex(c => c.path === path);
+
+                  if (existingIdx !== -1) {
+                    // File was already modified — update to show cumulative change
+                    // Keep original oldString, update newString to current
+                    const existing = fileChanges[existingIdx];
+                    fileChanges[existingIdx] = {
+                      ...existing,
+                      newString: data.input?.new_string ?? existing.newString,
+                      content: data.input?.content ?? existing.content,
+                    };
+                  } else {
+                    // First modification to this file
+                    fileChanges.push({
+                      op,
+                      path,
+                      content: data.input?.content,
+                      oldString: data.input?.old_string,
+                      newString: data.input?.new_string,
+                    });
                   }
-                : null;
-              setNotifications(prev => prev.map(n =>
-                n.id === tempId ? {
+
+                  return {
+                    ...n,
+                    currentTool: data.name,
+                    toolHistory: [...(n.toolHistory || []), data.name],
+                    fileChanges,
+                  };
+                }
+
+                return {
                   ...n,
                   currentTool: data.name,
                   toolHistory: [...(n.toolHistory || []), data.name],
-                  fileChanges: change
-                    ? [...(n.fileChanges || []), change]
-                    : (n.fileChanges || []),
-                } : n
-              ));
+                };
+              }));
             } else if (data.t === 'done') {
               const notif = data.notif;
               clearTimeout(saveTimerRef.current);
@@ -938,7 +961,7 @@ export default function Home() {
         ) : activeView === 'artifacts' ? (
           <ArtifactsView projects={projects} initialProjectId={artifactsInitialProject} />
         ) : activeView === 'agents' ? (
-          <AgentsView />
+          <AgentsView projects={projects} />
         ) : activeView === 'skills' ? (
           <SkillsView />
         ) : activeView === 'mcp' ? (
@@ -998,6 +1021,22 @@ export default function Home() {
             onDelete={deleteTask}
             onClose={() => setActiveTask(null)}
             onRunWithAI={(task, allowedTools, instructions, agentIds) => runWithAI(task, activeTask.projectId, allowedTools, instructions, agentIds)}
+            onAgentResult={async (result) => {
+              clearTimeout(saveTimerRef.current);
+              await reloadFromDisk();
+              setNotifications(prev => [{
+                id: 'n' + Date.now() + Math.random().toString(36).slice(2, 6),
+                type: result.type,
+                projectName: activeProject.name,
+                taskName: activeTask.task?.name || 'Task',
+                message: result.message || '',
+                timestamp: new Date().toISOString(),
+                read: false,
+                logFile: result.logFile,
+              }, ...prev]);
+              setActiveTask(null);
+              setActiveView('queue');
+            }}
             onGoToQueue={() => { setActiveTask(null); setActiveView('queue'); }}
             onOpenWorkspace={(bucketName) => setWorkspaceTarget({ project: activeProject, bucketName })}
           />

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import AgentTaskExecutor from './AgentTaskExecutor';
 import styles from '../styles/AgentsView.module.css';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -264,10 +265,11 @@ function AgentForm({ initial, onSave, onCancel }) {
 
 // ── Main view ─────────────────────────────────────────────────────────────────
 
-export default function AgentsView() {
+export default function AgentsView({ projects = [] }) {
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [panel, setPanel] = useState(null); // null | 'new' | agent object
+  const [selectedTab, setSelectedTab] = useState('configure');
 
   function reload() {
     fetch('/api/agents').then(r => r.json())
@@ -336,7 +338,7 @@ export default function AgentsView() {
               <div
                 key={agent.id}
                 className={`${styles.agentCard} ${panel?.id === agent.id ? styles.agentCardActive : ''}`}
-                onClick={() => setPanel(agent)}
+                onClick={() => { setPanel(agent); setSelectedTab('configure'); }}
               >
                 <div className={styles.agentCardTop}>
                   <RoleBadge role={agent.role} />
@@ -368,9 +370,27 @@ export default function AgentsView() {
       {showForm && (
         <div className={styles.formPanel}>
           <div className={styles.formPanelHeader}>
-            <span className={styles.formPanelTitle}>
-              {isEditing ? `Edit "${panel.name}"` : 'New agent'}
-            </span>
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+              <span className={styles.formPanelTitle}>
+                {isEditing ? `Edit "${panel.name}"` : 'New agent'}
+              </span>
+              {isEditing && (
+                <div className={styles.tabSwitcher}>
+                  <button
+                    className={`${styles.tab} ${selectedTab === 'configure' ? styles.tabActive : ''}`}
+                    onClick={() => setSelectedTab('configure')}
+                  >
+                    Configure
+                  </button>
+                  <button
+                    className={`${styles.tab} ${selectedTab === 'run' ? styles.tabActive : ''}`}
+                    onClick={() => setSelectedTab('run')}
+                  >
+                    Run Tasks
+                  </button>
+                </div>
+              )}
+            </div>
             <button className={styles.formPanelClose} onClick={() => setPanel(null)}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -378,11 +398,19 @@ export default function AgentsView() {
             </button>
           </div>
           <div className={styles.formPanelBody}>
-            <AgentForm
-              initial={isEditing ? panel : null}
-              onSave={handleSave}
-              onCancel={() => setPanel(null)}
-            />
+            {selectedTab === 'configure' ? (
+              <AgentForm
+                initial={isEditing ? panel : null}
+                onSave={handleSave}
+                onCancel={() => setPanel(null)}
+              />
+            ) : (
+              <AgentTaskExecutor
+                agentId={panel.id}
+                agentName={panel.name}
+                projects={projects}
+              />
+            )}
           </div>
         </div>
       )}
