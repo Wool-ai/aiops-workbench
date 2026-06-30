@@ -169,7 +169,7 @@ export default async function handler(req, res) {
 
   const {
     task, projectId, projectName, bucket,
-    allowedTools: bodyAllowedTools, instructions, agentIds,
+    allowedTools: bodyAllowedTools, deniedTools: bodyDeniedTools, instructions, agentIds,
   } = req.body;
 
   // SSE headers
@@ -297,8 +297,26 @@ After completing the work (or if you hit a blocker or need input), write a singl
     } catch {}
   }
 
-  const allAllowedTools = [...new Set([...baseTools, ...mcpWildcards])];
+  let allAllowedTools = [...new Set([...baseTools, ...mcpWildcards])];
+
+  // Apply denied tools filter
+  if (bodyDeniedTools?.length > 0) {
+    allAllowedTools = allAllowedTools.filter(tool => {
+      if (bodyDeniedTools.includes(tool)) return false;
+      // Handle wildcard denials (e.g., mcp__server__* denies mcp__server__specific_tool)
+      for (const denied of bodyDeniedTools) {
+        if (denied.endsWith('__*') && tool.match(new RegExp(`^${denied.slice(0, -1)}.+$`))) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }
+
   writeLine(logStream, `Allowed tools: ${allAllowedTools.join(', ')}`);
+  if (bodyDeniedTools?.length > 0) {
+    writeLine(logStream, `Denied tools: ${bodyDeniedTools.join(', ')}`);
+  }
   writeLine(logStream);
 
   let type, message;

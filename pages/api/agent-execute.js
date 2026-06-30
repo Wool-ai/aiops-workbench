@@ -4,7 +4,7 @@ import path from 'path';
 import os from 'os';
 
 const CLAUDE_BIN = process.env.CLAUDE_PATH || '/opt/homebrew/bin/claude';
-const LOG_DIR = '/Users/hassanwarsi/Desktop/ai/ai-logs';
+const LOG_DIR = '/Users/<user>/Desktop/ai/ai-logs';
 const TIMEOUT_MS = 300_000;
 const WORKSPACE_ROOT = path.join(process.cwd(), 'workspace');
 const MCP_CONFIG = path.join(process.cwd(), 'mcp-config.json');

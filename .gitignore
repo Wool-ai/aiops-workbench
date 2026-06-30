@@ -5,3 +5,4 @@ workspace/**
 !workspace/README.md
 schedules.json
 agents.json
+CLAUDE.md

@@ -42,6 +42,7 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
   const [aiQueued, setAiQueued] = useState(false);
   const [showToolConfig, setShowToolConfig] = useState(false);
   const [allowedTools, setAllowedTools] = useState([...DEFAULT_TOOLS]);
+  const [deniedTools, setDeniedTools] = useState([]);
   const [customToolInput, setCustomToolInput] = useState('');
   const [mcpServers, setMcpServers] = useState([]);
   const [templates, setTemplates] = useState([]);
@@ -144,7 +145,7 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
     onSave(updatedTask);
     setAiQueued(true);
     const tpl = templates.find(t => t.id === selectedTemplate);
-    onRunWithAI(updatedTask, allowedTools, tpl?.content || undefined, selectedAgentIds.length ? selectedAgentIds : undefined);
+    onRunWithAI(updatedTask, allowedTools, tpl?.content || undefined, selectedAgentIds.length ? selectedAgentIds : undefined, deniedTools.length ? deniedTools : undefined);
     setTimeout(() => setAiQueued(false), 3000);
   }
 
@@ -178,6 +179,9 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
   function toggleTool(name) {
     setAllowedTools(prev => prev.includes(name) ? prev.filter(t => t !== name) : [...prev, name]);
   }
+  function toggleDeniedTool(name) {
+    setDeniedTools(prev => prev.includes(name) ? prev.filter(t => t !== name) : [...prev, name]);
+  }
   function addCustomTool() {
     const name = customToolInput.trim();
     if (!name || allowedTools.includes(name)) { setCustomToolInput(''); return; }
@@ -186,6 +190,15 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
   }
   function removeCustomTool(name) {
     setAllowedTools(prev => prev.filter(t => t !== name));
+  }
+  function addCustomDeniedTool() {
+    const name = customToolInput.trim();
+    if (!name || deniedTools.includes(name)) { setCustomToolInput(''); return; }
+    setDeniedTools(prev => [...prev, name]);
+    setCustomToolInput('');
+  }
+  function removeCustomDeniedTool(name) {
+    setDeniedTools(prev => prev.filter(t => t !== name));
   }
 
   function handleAddComment() {
@@ -627,34 +640,68 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
                   </div>
                 </>
               )}
+              <div className={styles.aiMcpLabel}>Allowed Tools</div>
               <div className={styles.aiToolGrid}>
                 {ALL_TOOLS.map(tool => {
                   const checked = allowedTools.includes(tool.name);
+                  const isDenied = deniedTools.includes(tool.name);
                   return (
                     <label
                       key={tool.name}
-                      className={`${styles.aiToolChip} ${checked ? styles.aiToolChipOn : ''}`}
+                      className={`${styles.aiToolChip} ${isDenied ? styles.aiToolChipDenied : checked ? styles.aiToolChipOn : ''}`}
+                      title={isDenied ? 'This tool is denied' : ''}
                     >
-                      <input type="checkbox" checked={checked} onChange={() => toggleTool(tool.name)} />
+                      <input type="checkbox" checked={checked && !isDenied} onChange={() => {
+                        if (isDenied) {
+                          toggleDeniedTool(tool.name);
+                        } else {
+                          toggleTool(tool.name);
+                        }
+                      }} disabled={isDenied} />
                       <span>{tool.name}</span>
                       {!tool.isDefault && <span className={styles.aiToolExtra}>+</span>}
                     </label>
                   );
                 })}
               </div>
+              <div className={styles.aiMcpLabel}>Explicitly Deny Tools</div>
+              <div className={styles.aiToolGrid}>
+                {ALL_TOOLS.map(tool => {
+                  const isDenied = deniedTools.includes(tool.name);
+                  return (
+                    <label
+                      key={`deny-${tool.name}`}
+                      className={`${styles.aiToolChip} ${isDenied ? styles.aiToolChipDenied : ''}`}
+                      title={isDenied ? 'This tool is blocked' : 'Block this tool'}
+                    >
+                      <input type="checkbox" checked={isDenied} onChange={() => toggleDeniedTool(tool.name)} />
+                      <span>{tool.name}</span>
+                      {isDenied && <span className={styles.aiToolExtra}>✕</span>}
+                    </label>
+                  );
+                })}
+              </div>
               {mcpServers.length > 0 && (
                 <>
-                  <div className={styles.aiMcpLabel}>MCP Servers</div>
+                  <div className={styles.aiMcpLabel}>MCP Servers (Allowed)</div>
                   <div className={styles.aiToolGrid}>
                     {mcpServers.map(srv => {
                       const wildcard = `mcp__${srv}__*`;
                       const checked = allowedTools.includes(wildcard);
+                      const isDenied = deniedTools.includes(wildcard);
                       return (
                         <label
                           key={srv}
-                          className={`${styles.aiToolChip} ${styles.aiToolChipMcp} ${checked ? styles.aiToolChipMcpOn : ''}`}
+                          className={`${styles.aiToolChip} ${styles.aiToolChipMcp} ${isDenied ? styles.aiToolChipDenied : checked ? styles.aiToolChipMcpOn : ''}`}
+                          title={isDenied ? 'This MCP server is denied' : ''}
                         >
-                          <input type="checkbox" checked={checked} onChange={() => toggleTool(wildcard)} />
+                          <input type="checkbox" checked={checked && !isDenied} onChange={() => {
+                            if (isDenied) {
+                              toggleDeniedTool(wildcard);
+                            } else {
+                              toggleTool(wildcard);
+                            }
+                          }} disabled={isDenied} />
                           <span>{srv}</span>
                           <span className={styles.aiToolExtra}>mcp</span>
                         </label>
@@ -663,15 +710,53 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
                   </div>
                 </>
               )}
+              {mcpServers.length > 0 && (
+                <>
+                  <div className={styles.aiMcpLabel}>MCP Servers (Deny)</div>
+                  <div className={styles.aiToolGrid}>
+                    {mcpServers.map(srv => {
+                      const wildcard = `mcp__${srv}__*`;
+                      const isDenied = deniedTools.includes(wildcard);
+                      return (
+                        <label
+                          key={`deny-mcp-${srv}`}
+                          className={`${styles.aiToolChip} ${styles.aiToolChipMcp} ${isDenied ? styles.aiToolChipDenied : ''}`}
+                          title={isDenied ? 'This MCP server is blocked' : 'Block this MCP server'}
+                        >
+                          <input type="checkbox" checked={isDenied} onChange={() => toggleDeniedTool(wildcard)} />
+                          <span>{srv}</span>
+                          <span className={styles.aiToolExtra}>{isDenied ? '✕' : 'mcp'}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
               {allowedTools.filter(t => !ALL_TOOLS.find(a => a.name === t) && !mcpServers.includes(t.replace(/^mcp__(.+)__\*$/, '$1'))).length > 0 && (
-                <div className={styles.aiCustomTags}>
-                  {allowedTools.filter(t => !ALL_TOOLS.find(a => a.name === t) && !mcpServers.includes(t.replace(/^mcp__(.+)__\*$/, '$1'))).map(name => (
-                    <span key={name} className={styles.aiCustomTag}>
-                      {name}
-                      <button type="button" className={styles.aiCustomTagRemove} onClick={() => removeCustomTool(name)}>×</button>
-                    </span>
-                  ))}
-                </div>
+                <>
+                  <div className={styles.aiMcpLabel}>Custom Allowed Tools</div>
+                  <div className={styles.aiCustomTags}>
+                    {allowedTools.filter(t => !ALL_TOOLS.find(a => a.name === t) && !mcpServers.includes(t.replace(/^mcp__(.+)__\*$/, '$1'))).map(name => (
+                      <span key={name} className={styles.aiCustomTag}>
+                        {name}
+                        <button type="button" className={styles.aiCustomTagRemove} onClick={() => removeCustomTool(name)}>×</button>
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
+              {deniedTools.filter(t => !ALL_TOOLS.find(a => a.name === t) && !mcpServers.includes(t.replace(/^mcp__(.+)__\*$/, '$1'))).length > 0 && (
+                <>
+                  <div className={styles.aiMcpLabel}>Custom Denied Tools</div>
+                  <div className={styles.aiCustomTags}>
+                    {deniedTools.filter(t => !ALL_TOOLS.find(a => a.name === t) && !mcpServers.includes(t.replace(/^mcp__(.+)__\*$/, '$1'))).map(name => (
+                      <span key={name} className={`${styles.aiCustomTag} ${styles.aiCustomTagDenied}`}>
+                        {name}
+                        <button type="button" className={styles.aiCustomTagRemove} onClick={() => removeCustomDeniedTool(name)}>×</button>
+                      </span>
+                    ))}
+                  </div>
+                </>
               )}
               <div className={styles.aiCustomRow}>
                 <input
@@ -686,7 +771,14 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
                   className={styles.aiCustomAdd}
                   onClick={addCustomTool}
                   disabled={!customToolInput.trim()}
-                >Add</button>
+                >Allow</button>
+                <button
+                  type="button"
+                  className={`${styles.aiCustomAdd} ${styles.aiCustomAddDeny}`}
+                  onClick={addCustomDeniedTool}
+                  disabled={!customToolInput.trim()}
+                  title="Add to denied list"
+                >Deny</button>
               </div>
             </div>
           )}

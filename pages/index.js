@@ -537,7 +537,7 @@ export default function Home() {
     });
   }, []);
 
-  const runWithAI = useCallback(async (task, projectId, allowedTools, instructions, agentIds) => {
+  const runWithAI = useCallback(async (task, projectId, allowedTools, instructions, agentIds, deniedTools) => {
     const project = projects.find(p => p.id === projectId);
     if (!project) return;
     const tempId = 'processing-' + Date.now();
@@ -565,6 +565,7 @@ export default function Home() {
         body: JSON.stringify({
           task, projectId, projectName: project.name, bucket: task.bucket || '',
           allowedTools: allowedTools?.length ? allowedTools : undefined,
+          deniedTools: deniedTools?.length ? deniedTools : undefined,
           instructions: instructions || undefined,
           agentIds: agentIds?.length ? agentIds : undefined,
         }),
@@ -1020,7 +1021,7 @@ export default function Home() {
             onSave={saveTask}
             onDelete={deleteTask}
             onClose={() => setActiveTask(null)}
-            onRunWithAI={(task, allowedTools, instructions, agentIds) => runWithAI(task, activeTask.projectId, allowedTools, instructions, agentIds)}
+            onRunWithAI={(task, allowedTools, instructions, agentIds, deniedTools) => runWithAI(task, activeTask.projectId, allowedTools, instructions, agentIds, deniedTools)}
             onAgentResult={async (result) => {
               clearTimeout(saveTimerRef.current);
               await reloadFromDisk();
