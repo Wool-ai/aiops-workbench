@@ -91,7 +91,7 @@ function PriorityChip({ priority }) {
 
 /* ── Bucket section (collapsible) ─────────────── */
 
-function BucketSection({ label, tasks, projectId, onTaskClick, onStatusChange, isUncategorized, onOpenWorkspace }) {
+function BucketSection({ label, tasks, projectId, onTaskClick, onStatusChange, isUncategorized, onOpenWorkspace, selectedTasks, onSelectTask }) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -132,39 +132,62 @@ function BucketSection({ label, tasks, projectId, onTaskClick, onStatusChange, i
 
       {!collapsed && (
         <div className={styles.bucketTasks}>
-          {tasks.map(task => (
-            <div
-              key={task.id}
-              className={styles.taskRow}
-              onClick={() => onTaskClick(task, projectId)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={e => e.key === 'Enter' && onTaskClick(task, projectId)}
-            >
-              <div className={`${styles.cell} ${styles.colName}`}>
-                <span className={styles.taskName}>
-                  {task.name || <em className={styles.untitled}>Untitled task</em>}
-                </span>
-                {task.desc && <span className={styles.taskDesc}>{task.desc}</span>}
-              </div>
-              <div className={`${styles.cell} ${styles.colPriority}`}>
-                <PriorityChip priority={task.priority} />
-              </div>
-              <div className={`${styles.cell} ${styles.colStatus}`}>
-                <StatusChip col={task.col} onChange={newCol => onStatusChange(task, projectId, newCol)} />
-              </div>
-              <div className={`${styles.cell} ${styles.colAssignee}`}>
-                {task.assignee ? (
-                  <span className={styles.assigneeCell}>
-                    <Avatar name={task.assignee} size={18} />
-                    <span className={styles.assigneeName}>{task.assignee}</span>
-                  </span>
-                ) : (
-                  <span className={styles.none}>Unassigned</span>
+          {tasks.map(task => {
+            const isSelected = selectedTasks?.has(task.id);
+            return (
+              <div
+                key={task.id}
+                className={`${styles.taskRow} ${onSelectTask ? styles.taskRowSelectable : ''} ${isSelected ? styles.taskRowSelected : ''}`}
+                onClick={() => onTaskClick(task, projectId)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={e => e.key === 'Enter' && onTaskClick(task, projectId)}
+              >
+                {onSelectTask && (
+                  <div className={`${styles.cell} ${styles.colSelect}`} onClick={e => e.stopPropagation()}>
+                    <button
+                      className={`${styles.rowSelectBtn} ${isSelected ? styles.rowSelectBtnChecked : ''}`}
+                      onClick={() => onSelectTask(task.id)}
+                      title={isSelected ? 'Deselect' : 'Select'}
+                    >
+                      {isSelected && (
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 )}
+                <div className={`${styles.cell} ${styles.colName}`}>
+                  <span className={styles.taskName}>
+                    {task.name || <em className={styles.untitled}>Untitled task</em>}
+                  </span>
+                  {task.desc && <span className={styles.taskDesc}>{task.desc}</span>}
+                  {task.subtasks?.length > 0 && (
+                    <span className={styles.subtaskProgress}>
+                      ✓ {task.subtasks.filter(s => s.done).length}/{task.subtasks.length} subtasks
+                    </span>
+                  )}
+                </div>
+                <div className={`${styles.cell} ${styles.colPriority}`}>
+                  <PriorityChip priority={task.priority} />
+                </div>
+                <div className={`${styles.cell} ${styles.colStatus}`}>
+                  <StatusChip col={task.col} onChange={newCol => onStatusChange(task, projectId, newCol)} />
+                </div>
+                <div className={`${styles.cell} ${styles.colAssignee}`}>
+                  {task.assignee ? (
+                    <span className={styles.assigneeCell}>
+                      <Avatar name={task.assignee} size={18} />
+                      <span className={styles.assigneeName}>{task.assignee}</span>
+                    </span>
+                  ) : (
+                    <span className={styles.none}>Unassigned</span>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -235,7 +258,7 @@ function groupByBucket(buckets, tasks) {
   return groups;
 }
 
-export default function BacklogView({ displayProjects, projects, onTaskClick, onAddTask, onStatusChange, onAddBucket, isFiltered, onOpenWorkspace }) {
+export default function BacklogView({ displayProjects, projects, onTaskClick, onAddTask, onStatusChange, onAddBucket, isFiltered, onOpenWorkspace, selectedTasks, onSelectTask }) {
   const anyTasks = displayProjects.some(p => p.tasks.length > 0);
 
   if (!anyTasks) {
@@ -296,7 +319,8 @@ export default function BacklogView({ displayProjects, projects, onTaskClick, on
               /* ── Bucket-grouped view ── */
               <div className={styles.bucketedBody}>
                 {/* Column headings */}
-                <div className={`${styles.colHeadings} ${styles.colHeadingsBucketed}`}>
+                <div className={`${styles.colHeadings} ${styles.colHeadingsBucketed} ${onSelectTask ? styles.colHeadingsWithSelect : ''}`}>
+                  {onSelectTask && <span className={`${styles.colHead} ${styles.colSelect}`} />}
                   <span className={`${styles.colHead} ${styles.colName}`}>Task</span>
                   <span className={`${styles.colHead} ${styles.colPriority}`}>Priority</span>
                   <span className={`${styles.colHead} ${styles.colStatus}`}>Status</span>
@@ -312,6 +336,8 @@ export default function BacklogView({ displayProjects, projects, onTaskClick, on
                     onStatusChange={onStatusChange}
                     isUncategorized={isUncategorized}
                     onOpenWorkspace={onOpenWorkspace ? (bucketName) => onOpenWorkspace(project, bucketName) : null}
+                    selectedTasks={selectedTasks}
+                    onSelectTask={onSelectTask}
                   />
                 ))}
                 {!isFiltered && (
@@ -323,46 +349,65 @@ export default function BacklogView({ displayProjects, projects, onTaskClick, on
             ) : (
               /* ── Flat view (no buckets) ── */
               <>
-                <div className={styles.colHeadings}>
+                <div className={`${styles.colHeadings} ${onSelectTask ? styles.colHeadingsWithSelect : ''}`}>
+                  {onSelectTask && <span className={`${styles.colHead} ${styles.colSelect}`} />}
                   <span className={`${styles.colHead} ${styles.colName}`}>Task</span>
                   <span className={`${styles.colHead} ${styles.colPriority}`}>Priority</span>
                   <span className={`${styles.colHead} ${styles.colStatus}`}>Status</span>
                   <span className={`${styles.colHead} ${styles.colAssignee}`}>Assignee</span>
                 </div>
                 <div className={styles.taskList}>
-                  {tasks.map(task => (
-                    <div
-                      key={task.id}
-                      className={styles.taskRow}
-                      onClick={() => onTaskClick(task, project.id)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={e => e.key === 'Enter' && onTaskClick(task, project.id)}
-                    >
-                      <div className={`${styles.cell} ${styles.colName}`}>
-                        <span className={styles.taskName}>
-                          {task.name || <em className={styles.untitled}>Untitled task</em>}
-                        </span>
-                        {task.desc && <span className={styles.taskDesc}>{task.desc}</span>}
-                      </div>
-                      <div className={`${styles.cell} ${styles.colPriority}`}>
-                        <PriorityChip priority={task.priority} />
-                      </div>
-                      <div className={`${styles.cell} ${styles.colStatus}`}>
-                        <StatusChip col={task.col} onChange={newCol => onStatusChange(task, project.id, newCol)} />
-                      </div>
-                      <div className={`${styles.cell} ${styles.colAssignee}`}>
-                        {task.assignee ? (
-                          <span className={styles.assigneeCell}>
-                            <Avatar name={task.assignee} size={18} />
-                            <span className={styles.assigneeName}>{task.assignee}</span>
-                          </span>
-                        ) : (
-                          <span className={styles.none}>Unassigned</span>
+                  {tasks.map(task => {
+                    const isSelected = selectedTasks?.has(task.id);
+                    return (
+                      <div
+                        key={task.id}
+                        className={`${styles.taskRow} ${onSelectTask ? styles.taskRowSelectable : ''} ${isSelected ? styles.taskRowSelected : ''}`}
+                        onClick={() => onTaskClick(task, project.id)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={e => e.key === 'Enter' && onTaskClick(task, project.id)}
+                      >
+                        {onSelectTask && (
+                          <div className={`${styles.cell} ${styles.colSelect}`} onClick={e => e.stopPropagation()}>
+                            <button
+                              className={`${styles.rowSelectBtn} ${isSelected ? styles.rowSelectBtnChecked : ''}`}
+                              onClick={() => onSelectTask(task.id)}
+                              title={isSelected ? 'Deselect' : 'Select'}
+                            >
+                              {isSelected && (
+                                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                              )}
+                            </button>
+                          </div>
                         )}
+                        <div className={`${styles.cell} ${styles.colName}`}>
+                          <span className={styles.taskName}>
+                            {task.name || <em className={styles.untitled}>Untitled task</em>}
+                          </span>
+                          {task.desc && <span className={styles.taskDesc}>{task.desc}</span>}
+                        </div>
+                        <div className={`${styles.cell} ${styles.colPriority}`}>
+                          <PriorityChip priority={task.priority} />
+                        </div>
+                        <div className={`${styles.cell} ${styles.colStatus}`}>
+                          <StatusChip col={task.col} onChange={newCol => onStatusChange(task, project.id, newCol)} />
+                        </div>
+                        <div className={`${styles.cell} ${styles.colAssignee}`}>
+                          {task.assignee ? (
+                            <span className={styles.assigneeCell}>
+                              <Avatar name={task.assignee} size={18} />
+                              <span className={styles.assigneeName}>{task.assignee}</span>
+                            </span>
+                          ) : (
+                            <span className={styles.none}>Unassigned</span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 {!isFiltered && (
                   <div className={styles.addBucketRow}>

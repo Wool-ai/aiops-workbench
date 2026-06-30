@@ -34,6 +34,8 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
   const [dueTime, setDueTime] = useState('');
   const [priority, setPriority] = useState('medium');
   const [comments, setComments] = useState([]);
+  const [subtasks, setSubtasks] = useState([]);
+  const [subtaskInput, setSubtaskInput] = useState('');
   const [commentInput, setCommentInput] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [aiQueued, setAiQueued] = useState(false);
@@ -73,6 +75,8 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
       setDueTime(task.dueTime || '');
       setPriority(task.priority || 'medium');
       setComments(task.comments || []);
+      setSubtasks(task.subtasks || []);
+      setSubtaskInput('');
       setShowDeleteConfirm(false);
       setShowToolConfig(false);
       setAllowedTools([...DEFAULT_TOOLS]);
@@ -106,12 +110,27 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
   if (!task) return null;
 
   function handleSave() {
-    onSave({ ...task, name: name.trim() || 'Untitled task', desc, assignee, col, bucket, dueDate, dueTime, priority, comments });
+    onSave({ ...task, name: name.trim() || 'Untitled task', desc, assignee, col, bucket, dueDate, dueTime, priority, comments, subtasks });
+  }
+
+  function addSubtask() {
+    const name = subtaskInput.trim();
+    if (!name) return;
+    setSubtasks(prev => [...prev, { id: 's' + Date.now(), name, done: false }]);
+    setSubtaskInput('');
+  }
+
+  function toggleSubtask(id) {
+    setSubtasks(prev => prev.map(s => s.id === id ? { ...s, done: !s.done } : s));
+  }
+
+  function deleteSubtask(id) {
+    setSubtasks(prev => prev.filter(s => s.id !== id));
   }
 
   function handleRunWithAI() {
     if (!onRunWithAI || aiQueued) return;
-    const updatedTask = { ...task, name: name.trim() || 'Untitled task', desc, assignee, col, bucket, dueDate, dueTime, priority, comments };
+    const updatedTask = { ...task, name: name.trim() || 'Untitled task', desc, assignee, col, bucket, dueDate, dueTime, priority, comments, subtasks };
     onSave(updatedTask);
     setAiQueued(true);
     const tpl = templates.find(t => t.id === selectedTemplate);
@@ -187,6 +206,61 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
         </div>
 
         <div className={styles.field}>
+          <label className={styles.label}>
+            Subtasks
+            {subtasks.length > 0 && (
+              <span className={styles.subtaskProgress}>
+                {subtasks.filter(s => s.done).length}/{subtasks.length}
+              </span>
+            )}
+          </label>
+          {subtasks.length > 0 && (
+            <div className={styles.subtaskList}>
+              {subtasks.map(s => (
+                <div key={s.id} className={styles.subtaskItem}>
+                  <button
+                    type="button"
+                    className={`${styles.subtaskCheck} ${s.done ? styles.subtaskCheckDone : ''}`}
+                    onClick={() => toggleSubtask(s.id)}
+                  >
+                    {s.done && (
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    )}
+                  </button>
+                  <span className={`${styles.subtaskName} ${s.done ? styles.subtaskNameDone : ''}`}>{s.name}</span>
+                  <button
+                    type="button"
+                    className={styles.subtaskDel}
+                    onClick={() => deleteSubtask(s.id)}
+                  >
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className={styles.subtaskAddRow}>
+            <input
+              className={styles.subtaskInput}
+              value={subtaskInput}
+              onChange={e => setSubtaskInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSubtask(); } }}
+              placeholder="Add a subtask…"
+            />
+            <button
+              type="button"
+              className={styles.subtaskAddBtn}
+              onClick={addSubtask}
+              disabled={!subtaskInput.trim()}
+            >Add</button>
+          </div>
+        </div>
+
+        <div className={styles.field}>
           <label className={styles.label}>Assignee</label>
           <div className={styles.assigneeRow}>
             {assignee && <Avatar name={assignee} size={22} />}
@@ -245,6 +319,28 @@ export default function TaskPanel({ task, projectName, projectBuckets, onSave, o
 
         <div className={styles.field}>
           <label className={styles.label}>Due date</label>
+          <div className={styles.dueDateQuick}>
+            {[
+              { label: 'Today', days: 0 },
+              { label: 'Tomorrow', days: 1 },
+              { label: '+3 days', days: 3 },
+              { label: 'Next week', days: 7 },
+            ].map(({ label, days }) => {
+              const d = new Date();
+              d.setDate(d.getDate() + days);
+              const val = d.toISOString().slice(0, 10);
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  className={`${styles.dueDateQuickBtn} ${dueDate === val ? styles.dueDateQuickBtnActive : ''}`}
+                  onClick={() => setDueDate(val)}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
           <div className={styles.dueDateRow}>
             <input
               className={styles.input}

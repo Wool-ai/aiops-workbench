@@ -433,7 +433,7 @@ const RUN_TYPE_META = {
   completed:          { label: 'Completed',         color: 'var(--done-c)',    bg: 'var(--done-bg)' },
   issue:              { label: 'Issue',              color: 'var(--review-c)',  bg: 'var(--review-bg)' },
   human_input:        { label: 'Needs input',        color: 'var(--inprog-c)', bg: 'var(--inprog-bg)' },
-  permission_required:{ label: 'Needs approval',     color: '#c084fc',          bg: 'rgba(192,132,252,0.12)' },
+  permission_required:{ label: 'Needs approval',     color: 'var(--mcp-c)',          bg: 'var(--mcp-bg)' },
   processing:         { label: 'Running…',           color: 'var(--text3)',     bg: 'var(--surface3)' },
 };
 
@@ -474,9 +474,44 @@ function RunHistory({ runs, onApproveRetry }) {
               </span>
             </div>
 
-            {run.message && (
+            {run.type === 'processing' ? (
+              <div className={styles.runProcessing}>
+                {(run.toolHistory || []).length > 0 ? (
+                  <div className={styles.runToolFeed}>
+                    {(run.toolHistory || []).slice(-6).map((tool, i, arr) => {
+                      const isActive = i === arr.length - 1;
+                      const label = tool.replace(/^mcp__\w+__/, '').replace(/_/g, ' ');
+                      return (
+                        <div key={i} className={`${styles.runToolItem} ${isActive ? styles.runToolActive : styles.runToolDone}`}>
+                          {isActive ? (
+                            <svg className={styles.runSpinner} width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                            </svg>
+                          ) : (
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                          )}
+                          <span>{label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <span className={styles.runIdle}>
+                    <svg className={styles.runSpinner} width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                    </svg>
+                    AI is processing…
+                  </span>
+                )}
+                {run.streamText?.trim() && (
+                  <pre className={styles.runStreamText}>{run.streamText.trim()}</pre>
+                )}
+              </div>
+            ) : run.message ? (
               <pre className={styles.runOutput}>{run.message}</pre>
-            )}
+            ) : null}
 
             {run.deniedOperations && run.deniedOperations.length > 0 && (
               <div className={styles.runDenied}>
@@ -502,12 +537,13 @@ function RunHistory({ runs, onApproveRetry }) {
   );
 }
 
-export default function ScheduledView({ projects, notifications = [], onApproveRetry }) {
+export default function ScheduledView({ projects, notifications = [], selectedProjectId = '', onApproveRetry }) {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [panel, setPanel] = useState(null); // null | 'new' | schedule object (editing)
   const [tab, setTab] = useState('logs'); // 'edit' | 'logs'
   const [saveError, setSaveError] = useState(null);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     fetch('/api/schedules')
@@ -582,7 +618,14 @@ export default function ScheduledView({ projects, notifications = [], onApproveR
     }
   }
 
-  const activeCount = schedules.filter(s => s.enabled).length;
+  const q = search.trim().toLowerCase();
+  const visibleSchedules = schedules.filter(s => {
+    if (selectedProjectId && s.projectId !== selectedProjectId) return false;
+    if (q && !s.name.toLowerCase().includes(q) && !(s.prompt || '').toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  const activeCount = visibleSchedules.filter(s => s.enabled).length;
 
   // Runs for the selected schedule — all non-processing first, then processing
   const selectedRuns = panel && panel !== 'new'
@@ -601,8 +644,8 @@ export default function ScheduledView({ projects, notifications = [], onApproveR
         <div className={styles.listHeader}>
           <div className={styles.listHeaderLeft}>
             <span className={styles.listTitle}>Schedules</span>
-            {schedules.length > 0 && (
-              <span className={styles.listCount}>{schedules.length}</span>
+            {visibleSchedules.length > 0 && (
+              <span className={styles.listCount}>{visibleSchedules.length}</span>
             )}
             {activeCount > 0 && (
               <span className={styles.activeChip}>{activeCount} active</span>
@@ -616,6 +659,23 @@ export default function ScheduledView({ projects, notifications = [], onApproveR
           </button>
         </div>
 
+        <div className={styles.searchBar}>
+          <input
+            className={styles.searchInput}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search schedules…"
+            aria-label="Search schedules"
+          />
+          {search && (
+            <button className={styles.clearSearch} onClick={() => setSearch('')} aria-label="Clear search">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          )}
+        </div>
+
         {loading ? (
           <div className={styles.listEmpty}>Loading…</div>
         ) : schedules.length === 0 ? (
@@ -626,9 +686,11 @@ export default function ScheduledView({ projects, notifications = [], onApproveR
             No schedules yet
             <button className={styles.emptyCreateBtn} onClick={() => { setPanel('new'); setTab('edit'); }}>Create your first</button>
           </div>
+        ) : visibleSchedules.length === 0 ? (
+          <div className={styles.listEmpty}>No schedules match your search.</div>
         ) : (
           <div className={styles.list}>
-            {schedules.map(s => (
+            {visibleSchedules.map(s => (
               <ScheduleCard
                 key={s.id}
                 schedule={s}

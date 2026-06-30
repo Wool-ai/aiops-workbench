@@ -1,7 +1,7 @@
 .backlog {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-xl);
 }
 
 /* ── Project group ─────────────────────────────── */
@@ -57,7 +57,7 @@
 .groupActions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-md);
 }
 
 .workspaceBtn {
@@ -71,7 +71,7 @@
   padding: 5px 11px;
   font-size: 12px;
   font-weight: 500;
-  transition: color 0.15s, background 0.15s, border-color 0.15s;
+  transition: color var(--transition), background var(--transition), border-color var(--transition);
 }
 
 .workspaceBtn:hover {
@@ -91,7 +91,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
 }
 
 .addTaskBtn:hover {
@@ -108,6 +108,10 @@
   background: var(--surface2);
   padding: 6px 18px;
   border-bottom: 1px solid var(--border);
+}
+
+.colHeadingsWithSelect {
+  grid-template-columns: 28px 1fr 100px 140px 160px;
 }
 
 .colHeadingsBucketed {
@@ -138,7 +142,15 @@
   min-height: 44px;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
-  transition: background 0.12s;
+  transition: background var(--transition-fast);
+}
+
+.taskRowSelectable {
+  grid-template-columns: 28px 1fr 100px 140px 160px;
+}
+
+.taskRowSelected {
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface)) !important;
 }
 
 .taskRow:last-child {
@@ -158,6 +170,45 @@
   display: flex;
   align-items: center;
   padding: 10px 0;
+}
+
+/* ── Select column ─────────────────────────────── */
+
+.colSelect {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+}
+
+.rowSelectBtn {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid var(--border2);
+  background: var(--surface3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+  opacity: 0;
+}
+
+.taskRow:hover .rowSelectBtn,
+.rowSelectBtnChecked {
+  opacity: 1 !important;
+}
+
+.rowSelectBtnChecked {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--btn-primary-text);
+}
+
+.rowSelectBtn:hover:not(.rowSelectBtnChecked) {
+  border-color: var(--accent);
+  background: var(--accent-glow);
 }
 
 /* ── Name column ───────────────────────────────── */
@@ -189,6 +240,13 @@
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.subtaskProgress {
+  font-size: 10px;
+  color: var(--text3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 /* ── Priority column ───────────────────────────── */
@@ -229,7 +287,7 @@
   border: 1px solid transparent;
   cursor: pointer;
   font-family: inherit;
-  transition: filter 0.12s, box-shadow 0.12s;
+  transition: filter var(--transition-fast), box-shadow var(--transition-fast);
   line-height: 1;
 }
 
@@ -255,7 +313,7 @@
 
 .statusChevron {
   opacity: 0.65;
-  transition: transform 0.15s;
+  transition: transform var(--transition);
   flex-shrink: 0;
 }
 
@@ -277,7 +335,7 @@
   border: 1px solid var(--border2);
   border-radius: var(--radius);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.2);
-  padding: 4px;
+  padding: var(--space-sm);
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -293,7 +351,7 @@
 .statusOption {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-md);
   padding: 7px 10px;
   border-radius: calc(var(--radius) - 2px);
   border: none;
@@ -386,7 +444,7 @@
   display: flex;
   align-items: center;
   padding: 0 12px 0 0;
-  transition: background 0.12s;
+  transition: background var(--transition-fast);
 }
 
 .bucketHeader:hover {
@@ -396,7 +454,7 @@
 .bucketToggle {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-md);
   flex: 1;
   padding: 9px 8px 9px 20px;
   background: transparent;
@@ -415,7 +473,7 @@
   padding: 5px 6px;
   border-radius: var(--radius-sm);
   flex-shrink: 0;
-  transition: color 0.15s, background 0.15s;
+  transition: color var(--transition), background var(--transition);
 }
 
 .bucketWorkspaceBtn:hover {
@@ -479,6 +537,10 @@
   padding-left: 44px;
 }
 
+.bucketTasks .taskRowSelectable {
+  grid-template-columns: 28px 1fr 100px 140px 160px;
+}
+
 .bucketTasks .taskRow:last-child {
   border-bottom: none;
 }
@@ -501,7 +563,7 @@
   font-weight: 500;
   padding: 5px 4px;
   border-radius: var(--radius-sm);
-  transition: color 0.15s, background 0.15s;
+  transition: color var(--transition), background var(--transition);
 }
 
 .addBucketTrigger:hover {
@@ -512,7 +574,7 @@
 .addBucketForm {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-md);
 }
 
 .addBucketInput {
@@ -539,7 +601,7 @@
   padding: 5px 12px;
   font-size: 12px;
   font-weight: 500;
-  transition: background 0.15s;
+  transition: background var(--transition);
 }
 
 .addBucketSave:hover {
@@ -553,7 +615,7 @@
   border-radius: var(--radius-sm);
   padding: 5px 12px;
   font-size: 12px;
-  transition: color 0.15s, background 0.15s;
+  transition: color var(--transition), background var(--transition);
 }
 
 .addBucketCancel:hover {
@@ -589,7 +651,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
 }
 
 .groupEmptyBtn:hover {

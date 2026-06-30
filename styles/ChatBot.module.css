@@ -8,7 +8,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 12px;
+  gap: var(--space-lg);
 }
 
 /* ── FAB toggle button ───────────────────────────────────────────────────── */
@@ -24,14 +24,14 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 0 0 var(--accent-glow);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.15s;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background var(--transition);
   position: relative;
   flex-shrink: 0;
 }
 
 .fab:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), 0 0 20px var(--accent-glow-strong, var(--accent-glow));
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), 0 0 20px var(--accent-glow-strong);
 }
 
 .fab:active {
@@ -97,7 +97,7 @@
   height: 30px;
   border-radius: 8px;
   background: var(--accent-glow);
-  border: 1px solid rgba(var(--accent-rgb, 108, 92, 231), 0.3);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
   color: var(--accent);
   display: flex;
   align-items: center;
@@ -121,7 +121,7 @@
 .headerActions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-sm);
 }
 
 .clearBtn,
@@ -135,7 +135,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.15s, background 0.15s;
+  transition: color var(--transition), background var(--transition);
 }
 
 .clearBtn:hover,
@@ -209,7 +209,7 @@
 .msgRow {
   display: flex;
   align-items: flex-end;
-  gap: 8px;
+  gap: var(--space-md);
 }
 
 .msgRowUser {
@@ -227,7 +227,7 @@
   height: 26px;
   border-radius: 50%;
   background: var(--accent-glow);
-  border: 1px solid rgba(var(--accent-rgb, 108, 92, 231), 0.25);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
   color: var(--accent);
   display: flex;
   align-items: center;
@@ -289,7 +289,7 @@
 .md li > ul, .md li > ol { margin: 3px 0 0; }
 
 .md code {
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: var(--font-mono);
   font-size: 11.5px;
   background: var(--surface3);
   border: 1px solid var(--border);
@@ -366,7 +366,7 @@
 
 .typingDots {
   display: flex;
-  gap: 4px;
+  gap: var(--space-sm);
   align-items: center;
   padding: 2px 0;
 }
@@ -388,7 +388,7 @@
 .inputRow {
   display: flex;
   align-items: flex-end;
-  gap: 8px;
+  gap: var(--space-md);
   padding: 10px 12px 12px;
   border-top: 1px solid var(--border);
   background: var(--surface2);
@@ -408,7 +408,7 @@
   line-height: 1.45;
   max-height: 120px;
   overflow-y: auto;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--transition), box-shadow var(--transition);
 }
 
 .input:focus {
@@ -436,7 +436,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 0.15s, opacity 0.15s, transform 0.1s;
+  transition: background var(--transition), opacity var(--transition), transform 0.1s;
 }
 
 .sendBtn:disabled {

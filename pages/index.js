@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import Swimlane from '../components/Swimlane';
 import TaskPanel from '../components/TaskPanel';
+import BulkActionBar from '../components/BulkActionBar';
 import NewProjectModal from '../components/NewProjectModal';
 import Sidebar from '../components/Sidebar';
 import BacklogView from '../components/BacklogView';
@@ -14,6 +15,7 @@ import ScheduledView from '../components/ScheduledView';
 import MCPView from '../components/MCPView';
 import SkillsView from '../components/SkillsView';
 import AgentsView from '../components/AgentsView';
+import ArtifactsView from '../components/ArtifactsView';
 import { ASSIGNEES, uid } from '../lib/data';
 import styles from '../styles/Home.module.css';
 
@@ -58,6 +60,10 @@ const VIEW_META = {
     label: 'MCP Servers',
     icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6" strokeWidth="2.5" strokeLinecap="round"/><line x1="6" y1="18" x2="6.01" y2="18" strokeWidth="2.5" strokeLinecap="round"/></svg>,
   },
+  artifacts: {
+    label: 'Artifacts',
+    icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+  },
 };
 
 async function loadData() {
@@ -82,11 +88,14 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTask, setActiveTask] = useState(null);
   const [workspaceTarget, setWorkspaceTarget] = useState(null); // { project, bucketName? }
+  const [artifactsInitialProject, setArtifactsInitialProject] = useState(null);
   const [showNewProject, setShowNewProject] = useState(false);
   const [activeView, setActiveView] = useState('dashboard');
   const [search, setSearch] = useState('');
   const [filterAssignee, setFilterAssignee] = useState('');
   const [sortBy, setSortBy] = useState('default');
+  const [selectedTasks, setSelectedTasks] = useState(new Set());
+  const [selectedProjectId, setSelectedProjectId] = useState('');
 
   // Load from data.json on mount
   useEffect(() => {
@@ -124,8 +133,71 @@ export default function Home() {
     return () => clearTimeout(saveTimerRef.current);
   }, [projects, notifications, dailyTasks, reminders, isLoading]);
 
-  // Scheduler tick — poll every 60 s, dispatch due schedules via runWithAI
+  // Scheduler tick — poll every 60 s, dispatch due schedules via streaming
   useEffect(() => {
+    async function runScheduledStream(s, task, projectId, tempId) {
+      try {
+        const res = await fetch('/api/ai-stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            task,
+            projectId,
+            projectName: s.projectName || 'Scheduled',
+            bucket: '',
+            allowedTools: s.allowedTools?.length ? s.allowedTools : undefined,
+            agentIds: s.agentIds?.length ? s.agentIds : undefined,
+          }),
+        });
+        if (!res.ok) throw new Error('Stream request failed');
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const lines = buf.split('\n');
+          buf = lines.pop();
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.t === 'text') {
+                const isJsonResult = /^\s*\{"type"\s*:\s*"(completed|issue|human_input)"/.test(data.delta);
+                if (!isJsonResult) {
+                  setNotifications(prev => prev.map(n =>
+                    n.id === tempId ? { ...n, streamText: (n.streamText || '') + data.delta } : n
+                  ));
+                }
+              } else if (data.t === 'tool') {
+                setNotifications(prev => prev.map(n =>
+                  n.id === tempId ? {
+                    ...n,
+                    currentTool: data.name,
+                    toolHistory: [...(n.toolHistory || []), data.name],
+                  } : n
+                ));
+              } else if (data.t === 'done') {
+                const notif = data.notif;
+                clearTimeout(saveTimerRef.current);
+                await reloadFromDisk();
+                setNotifications(prev => [
+                  { ...notif, scheduled: true, scheduleId: s.id },
+                  ...prev.filter(n => n.id !== tempId),
+                ]);
+                setActiveView(v => v === 'scheduled' ? 'queue' : v);
+              }
+            } catch {}
+          }
+        }
+      } catch {
+        setNotifications(prev => prev.map(n =>
+          n.id === tempId ? { ...n, type: 'issue', message: 'Scheduled task failed.' } : n
+        ));
+      }
+    }
+
     async function tick() {
       try {
         const res = await fetch('/api/scheduler-tick', { method: 'POST' });
@@ -155,33 +227,11 @@ export default function Home() {
               thread: [],
               scheduled: true,
               scheduleId: s.id,
+              streamText: '',
+              currentTool: null,
+              toolHistory: [],
             }, ...prev]);
-            fetch('/api/ai-process', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                task,
-                projectId,
-                projectName: s.projectName || 'Scheduled',
-                bucket: '',
-                allowedTools: s.allowedTools?.length ? s.allowedTools : undefined,
-                agentIds: s.agentIds?.length ? s.agentIds : undefined,
-              }),
-            })
-              .then(r => r.json())
-              .then(async notif => {
-                await reloadFromDisk();
-                setNotifications(prev => [
-                  { ...notif, scheduled: true, scheduleId: s.id },
-                  ...prev.filter(n => n.id !== tempId),
-                ]);
-                setActiveView(v => v === 'scheduled' ? 'queue' : v);
-              })
-              .catch(() => {
-                setNotifications(prev => prev.map(n =>
-                  n.id === tempId ? { ...n, type: 'issue', message: 'Scheduled task failed.' } : n
-                ));
-              });
+            runScheduledStream(s, task, projectId, tempId);
           }
         }
       } catch { /* network error, ignore */ }
@@ -234,6 +284,47 @@ export default function Home() {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [activeTask, showNewProject]);
+
+  // Clear selection on view change or when panel opens
+  useEffect(() => { setSelectedTasks(new Set()); }, [activeView]);
+
+  const handleTaskSelect = useCallback((taskId) => {
+    setSelectedTasks(prev => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
+  }, []);
+
+  const handleBulkStatus = useCallback((newCol) => {
+    setProjects(prev => prev.map(p => ({
+      ...p,
+      tasks: p.tasks.map(t => selectedTasks.has(t.id) ? { ...t, col: newCol } : t),
+    })));
+  }, [selectedTasks]);
+
+  const handleBulkPriority = useCallback((priority) => {
+    setProjects(prev => prev.map(p => ({
+      ...p,
+      tasks: p.tasks.map(t => selectedTasks.has(t.id) ? { ...t, priority } : t),
+    })));
+  }, [selectedTasks]);
+
+  const handleBulkAssignee = useCallback((assignee) => {
+    setProjects(prev => prev.map(p => ({
+      ...p,
+      tasks: p.tasks.map(t => selectedTasks.has(t.id) ? { ...t, assignee } : t),
+    })));
+  }, [selectedTasks]);
+
+  const handleBulkDelete = useCallback(() => {
+    setProjects(prev => prev.map(p => ({
+      ...p,
+      tasks: p.tasks.filter(t => !selectedTasks.has(t.id)),
+    })));
+    setSelectedTasks(new Set());
+  }, [selectedTasks]);
 
   const toggleLane = useCallback((pid) => {
     setProjects(prev => prev.map(p => p.id === pid ? { ...p, open: !p.open } : p));
@@ -462,18 +553,62 @@ export default function Home() {
       timestamp: new Date().toISOString(),
       read: false,
       thread: [],
+      streamText: '',
+      currentTool: null,
+      toolHistory: [],
     }, ...prev]);
+    setActiveView('queue');
     try {
-      const res = await fetch('/api/ai-process', {
+      const res = await fetch('/api/ai-stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task, projectId, projectName: project.name, bucket: task.bucket || '', allowedTools: allowedTools?.length ? allowedTools : undefined, instructions: instructions || undefined, agentIds: agentIds?.length ? agentIds : undefined }),
+        body: JSON.stringify({
+          task, projectId, projectName: project.name, bucket: task.bucket || '',
+          allowedTools: allowedTools?.length ? allowedTools : undefined,
+          instructions: instructions || undefined,
+          agentIds: agentIds?.length ? agentIds : undefined,
+        }),
       });
-      const notif = await res.json();
-      await reloadFromDisk();
-      setNotifications(prev => [notif, ...prev.filter(n => n.id !== tempId)]);
-      applyAIResult(notif);
-      setActiveView('queue');
+      if (!res.ok) throw new Error('Stream request failed');
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop();
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.t === 'text') {
+              // Filter out the final JSON result line — it's metadata, not content
+              const isJsonResult = /^\s*\{"type"\s*:\s*"(completed|issue|human_input)"/.test(data.delta);
+              if (!isJsonResult) {
+                setNotifications(prev => prev.map(n =>
+                  n.id === tempId ? { ...n, streamText: (n.streamText || '') + data.delta } : n
+                ));
+              }
+            } else if (data.t === 'tool') {
+              setNotifications(prev => prev.map(n =>
+                n.id === tempId ? {
+                  ...n,
+                  currentTool: data.name,
+                  toolHistory: [...(n.toolHistory || []), data.name],
+                } : n
+              ));
+            } else if (data.t === 'done') {
+              const notif = data.notif;
+              clearTimeout(saveTimerRef.current);
+              await reloadFromDisk();
+              setNotifications(prev => [notif, ...prev.filter(n => n.id !== tempId)]);
+              applyAIResult(notif);
+            }
+          } catch {}
+        }
+      }
     } catch {
       setNotifications(prev => prev.map(n =>
         n.id === tempId ? { ...n, type: 'issue', message: 'AI processing failed. Please try again.' } : n
@@ -615,44 +750,55 @@ export default function Home() {
             </button>
           )}
 
-          {/* Queue: unread count */}
-          {activeView === 'queue' && (() => {
-            const unread = notifications.filter(n => !n.read && n.type !== 'processing').length;
-            const needsInput = notifications.filter(n => !n.read && n.type === 'human_input').length;
-            return unread > 0 ? (
-              <div className={styles.topbarMeta}>
-                <span className={styles.topbarBadge}>{unread} unread</span>
-                {needsInput > 0 && (
-                  <span className={styles.topbarBadgeDanger}>{needsInput} need input</span>
-                )}
-              </div>
-            ) : (
-              <span className={styles.topbarSubtle}>All caught up</span>
-            );
-          })()}
-
-          {/* Daily: today's date */}
-          {activeView === 'daily' && (
-            <span className={styles.topbarSubtle}>
-              {new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
-            </span>
-          )}
-
-          {/* Reminders: overdue count */}
-          {activeView === 'reminders' && (() => {
-            const overdue = reminders.filter(r => !r.done && new Date(r.datetime) < new Date()).length;
-            return overdue > 0 ? (
-              <span className={styles.topbarBadgeDanger}>{overdue} overdue</span>
-            ) : (
-              <span className={styles.topbarSubtle}>No overdue reminders</span>
-            );
-          })()}
-
           {/* Dashboard: today's date */}
           {activeView === 'dashboard' && (
             <span className={styles.topbarSubtle}>
               {new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
             </span>
+          )}
+
+          {/* Queue / Daily / Reminders / Scheduled: project filter + context */}
+          {['queue', 'daily', 'reminders', 'scheduled'].includes(activeView) && (
+            <div className={styles.topbarActions}>
+              {projects.length > 0 && (
+                <select
+                  className={styles.projectFilter}
+                  value={selectedProjectId}
+                  onChange={e => setSelectedProjectId(e.target.value)}
+                  aria-label="Filter by project"
+                >
+                  <option value="">All projects</option>
+                  {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              )}
+              {activeView === 'queue' && (() => {
+                const unread = notifications.filter(n => !n.read && n.type !== 'processing').length;
+                const needsInput = notifications.filter(n => !n.read && n.type === 'human_input').length;
+                return unread > 0 ? (
+                  <div className={styles.topbarMeta}>
+                    <span className={styles.topbarBadge}>{unread} unread</span>
+                    {needsInput > 0 && (
+                      <span className={styles.topbarBadgeDanger}>{needsInput} need input</span>
+                    )}
+                  </div>
+                ) : (
+                  <span className={styles.topbarSubtle}>All caught up</span>
+                );
+              })()}
+              {activeView === 'daily' && (
+                <span className={styles.topbarSubtle}>
+                  {new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
+                </span>
+              )}
+              {activeView === 'reminders' && (() => {
+                const overdue = reminders.filter(r => !r.done && new Date(r.datetime) < new Date()).length;
+                return overdue > 0 ? (
+                  <span className={styles.topbarBadgeDanger}>{overdue} overdue</span>
+                ) : (
+                  <span className={styles.topbarSubtle}>No overdue reminders</span>
+                );
+              })()}
+            </div>
           )}
         </div>
 
@@ -697,11 +843,24 @@ export default function Home() {
         )}
       </header>
 
-      <main className={`${styles.main} ${activeView === 'dashboard' ? styles.mainDashboard : activeView === 'scheduled' ? styles.mainScheduled : (activeView === 'queue' || activeView === 'reminders') ? styles.mainQueue : activeView === 'daily' ? styles.mainDaily : (activeView === 'mcp' || activeView === 'skills' || activeView === 'agents') ? styles.mainScheduled : ''}`}>
+      <main key={activeView} className={`${styles.main} ${activeView === 'dashboard' ? styles.mainDashboard : activeView === 'scheduled' ? styles.mainScheduled : (activeView === 'queue' || activeView === 'reminders') ? styles.mainQueue : activeView === 'daily' ? styles.mainDaily : (activeView === 'mcp' || activeView === 'skills' || activeView === 'agents' || activeView === 'artifacts') ? styles.mainScheduled : ''}`}>
         {isLoading ? (
-          <div className={styles.loadingState}>
-            <div className={styles.loadingSpinner} />
-            Loading…
+          <div className={styles.skeletonDash}>
+            <div className={styles.skeletonKpiRow}>
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className={styles.skeletonBlock} style={{ height: 92 }} />
+              ))}
+            </div>
+            <div className={styles.skeletonBody}>
+              <div className={styles.skeletonCol}>
+                <div className={styles.skeletonBlock} style={{ height: 222 }} />
+                <div className={styles.skeletonBlock} style={{ height: 168 }} />
+              </div>
+              <div className={styles.skeletonSide}>
+                <div className={styles.skeletonBlock} style={{ height: 192 }} />
+                <div className={styles.skeletonBlock} style={{ height: 152 }} />
+              </div>
+            </div>
           </div>
         ) : activeView === 'dashboard' ? (
           <DashboardView
@@ -715,6 +874,7 @@ export default function Home() {
           <RemindersView
             reminders={reminders}
             projects={projects}
+            selectedProjectId={selectedProjectId}
             onSave={saveReminder}
             onDelete={deleteReminder}
             onToggleDone={toggleReminderDone}
@@ -731,11 +891,13 @@ export default function Home() {
           <ScheduledView
             projects={projects}
             notifications={notifications}
+            selectedProjectId={selectedProjectId}
             onApproveRetry={approveAndRetry}
           />
         ) : activeView === 'queue' ? (
           <QueueView
             notifications={notifications}
+            selectedProjectId={selectedProjectId}
             onMarkRead={markNotifRead}
             onDismiss={dismissNotif}
             onReply={replyToNotif}
@@ -745,7 +907,17 @@ export default function Home() {
               const task = project?.tasks.find(t => t.id === taskId);
               if (task) openTask(task, projectId);
             }}
+            onOpenWorkspace={(projectId) => {
+              const project = projects.find(p => p.id === projectId);
+              if (project) setWorkspaceTarget({ project, initialTab: 'artifacts' });
+            }}
+            onNavigateArtifacts={(projectId) => {
+              setArtifactsInitialProject(projectId);
+              setActiveView('artifacts');
+            }}
           />
+        ) : activeView === 'artifacts' ? (
+          <ArtifactsView projects={projects} initialProjectId={artifactsInitialProject} />
         ) : activeView === 'agents' ? (
           <AgentsView />
         ) : activeView === 'skills' ? (
@@ -762,6 +934,8 @@ export default function Home() {
             onAddBucket={addBucket}
             isFiltered={isFiltered}
             onOpenWorkspace={(project, bucketName) => setWorkspaceTarget({ project, bucketName })}
+            selectedTasks={selectedTasks}
+            onSelectTask={handleTaskSelect}
           />
         ) : projects.length === 0 ? (
           <div className={styles.empty}>
@@ -786,6 +960,8 @@ export default function Home() {
                 onRemoveBucket={(name) => removeBucket(project.id, name)}
                 onOpenWorkspace={(proj, bucketName) => setWorkspaceTarget({ project: proj, bucketName })}
                 onRunAll={() => runAllWithAI(project.id)}
+                selectedTasks={selectedTasks}
+                onSelectTask={handleTaskSelect}
               />
             );
           })
@@ -820,7 +996,20 @@ export default function Home() {
         <WorkspaceModal
           project={workspaceTarget.project}
           bucketName={workspaceTarget.bucketName}
+          initialTab={workspaceTarget.initialTab}
           onClose={() => setWorkspaceTarget(null)}
+          onArtifactChange={reloadFromDisk}
+        />
+      )}
+
+      {selectedTasks.size > 0 && (
+        <BulkActionBar
+          count={selectedTasks.size}
+          onStatus={handleBulkStatus}
+          onPriority={handleBulkPriority}
+          onAssignee={handleBulkAssignee}
+          onDelete={handleBulkDelete}
+          onClear={() => setSelectedTasks(new Set())}
         />
       )}
       </div>

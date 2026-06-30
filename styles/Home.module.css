@@ -1,7 +1,7 @@
 .appShell {
   display: flex;
   min-height: 100vh;
-  background: var(--bg);
+  /* background from body — lets the animated ambient glow show through */
 }
 
 .content {
@@ -124,7 +124,7 @@
 .topbarMeta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-md);
   margin-left: auto;
 }
 
@@ -138,6 +138,7 @@
   padding: 3px 9px;
   white-space: nowrap;
   letter-spacing: 0.01em;
+  animation: topbarBadgePulse 3s ease-in-out infinite;
 }
 
 .topbarBadgeDanger {
@@ -151,6 +152,7 @@
   white-space: nowrap;
   margin-left: auto;
   letter-spacing: 0.01em;
+  animation: topbarDangerPulse 2s ease-in-out infinite;
 }
 
 .topbarSubtle {
@@ -172,7 +174,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+  transition: background var(--transition), box-shadow var(--transition), transform 0.1s;
   box-shadow: 0 0 10px var(--accent-glow);
   letter-spacing: 0.02em;
 }
@@ -192,6 +194,7 @@
   padding: 24px;
   max-width: 1320px;
   margin: 0 auto;
+  animation: viewFadeIn 0.18s ease-out both;
 }
 
 .mainQueue {
@@ -244,7 +247,7 @@
 .progressArea {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-md);
 }
 
 .progressLabel {
@@ -267,6 +270,22 @@
   background: var(--accent);
   border-radius: 2px;
   transition: width 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.progressBarFill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: shimmer 2.2s ease-in-out infinite;
 }
 
 .searchRow {
@@ -283,7 +302,7 @@
   padding: 6px 10px 6px 30px;
   font-size: 12.5px;
   color: var(--text);
-  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%233e5278' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: 9px center;
@@ -312,7 +331,7 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%233e5278' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 7px center;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--transition), box-shadow var(--transition);
   min-width: 126px;
 }
 
@@ -338,7 +357,7 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%233e5278' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 7px center;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--transition), box-shadow var(--transition);
   min-width: 116px;
 }
 
@@ -360,7 +379,7 @@
   padding: 6px 11px;
   font-size: 11.5px;
   white-space: nowrap;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition: color var(--transition), border-color var(--transition), background var(--transition);
 }
 
 .clearFiltersBtn:hover {
@@ -374,33 +393,97 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: var(--space-xl);
   padding: 100px 20px;
   color: var(--text3);
   font-size: 14px;
 }
 
-.loadingState {
+/* ── View transition ─────────────────────────────── */
+
+@keyframes viewFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Skeleton loader ─────────────────────────────── */
+
+.skeletonDash {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  padding: 100px 20px;
-  color: var(--text3);
-  font-size: 13px;
+  gap: 18px;
+  width: 100%;
 }
 
-.loadingSpinner {
-  width: 28px;
-  height: 28px;
-  border: 2px solid var(--border2);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+.skeletonKpiRow {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.skeletonBody {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: var(--space-lg);
+  align-items: start;
+}
+
+.skeletonCol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.skeletonSide {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.skeletonBlock {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface2);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.skeletonBlock::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.04) 30%,
+    rgba(255, 255, 255, 0.07) 50%,
+    rgba(255, 255, 255, 0.04) 70%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: skeletonWave 1.8s ease-in-out infinite;
+}
+
+@keyframes skeletonWave {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes topbarBadgePulse {
+  0%, 100% { box-shadow: 0 0 0   0 color-mix(in srgb, var(--inprog-c) 0%,  transparent); }
+  50%       { box-shadow: 0 0 7px 2px color-mix(in srgb, var(--inprog-c) 22%, transparent); }
+}
+
+@keyframes topbarDangerPulse {
+  0%, 100% { box-shadow: 0 0 0   0 color-mix(in srgb, var(--danger) 0%,  transparent); }
+  50%       { box-shadow: 0 0 9px 3px color-mix(in srgb, var(--danger) 28%, transparent); }
 }
 
 .panelBackdrop {
@@ -408,4 +491,48 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.2);
   z-index: 99;
+}
+
+/* ── Topbar right-side actions group (project filter + context badge) ── */
+
+.topbarActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Reset auto-margin for context elements inside .topbarActions */
+.topbarActions .topbarMeta,
+.topbarActions .topbarBadgeDanger,
+.topbarActions .topbarSubtle {
+  margin-left: 0;
+}
+
+/* Project filter dropdown in topbar */
+.projectFilter {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 5px 24px 5px 10px;
+  font-size: 12px;
+  color: var(--text2);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%233e5278' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 7px center;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  min-width: 130px;
+}
+
+.projectFilter:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.projectFilter option {
+  background: var(--surface);
 }

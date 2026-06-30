@@ -5,17 +5,17 @@
   padding: 15px 15px;
   cursor: pointer;
   touch-action: none;
-  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, transform 0.12s, opacity 0.15s;
-  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.04);
+  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition), transform var(--transition-fast), opacity var(--transition);
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.07);
 }
 
-.card_urgent { box-shadow: inset 3px 0 0 var(--danger),   var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.04); }
-.card_high   { box-shadow: inset 3px 0 0 #f0a060,         var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.04); }
-.card_medium { box-shadow: inset 3px 0 0 var(--inprog-c), var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.04); }
-.card_low    { box-shadow: inset 3px 0 0 var(--border2),  var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.04); }
+.card_urgent { box-shadow: inset 3px 0 0 var(--danger),   var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.07); }
+.card_high   { box-shadow: inset 3px 0 0 var(--priority-high),         var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.07); }
+.card_medium { box-shadow: inset 3px 0 0 var(--inprog-c), var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.07); }
+.card_low    { box-shadow: inset 3px 0 0 var(--border2),  var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.07); }
 
 .card_urgent:hover { box-shadow: inset 3px 0 0 var(--danger),   0 4px 20px rgba(0,0,0,0.4), 0 0 0 1px var(--border2); }
-.card_high:hover   { box-shadow: inset 3px 0 0 #f0a060,         0 4px 20px rgba(0,0,0,0.4), 0 0 0 1px var(--border2); }
+.card_high:hover   { box-shadow: inset 3px 0 0 var(--priority-high),         0 4px 20px rgba(0,0,0,0.4), 0 0 0 1px var(--border2); }
 .card_medium:hover { box-shadow: inset 3px 0 0 var(--inprog-c), 0 4px 20px rgba(0,0,0,0.4), 0 0 0 1px var(--border2); }
 .card_low:hover    { box-shadow: inset 3px 0 0 var(--border2),  0 4px 20px rgba(0,0,0,0.4), 0 0 0 1px var(--border2); }
 
@@ -65,7 +65,7 @@
 .footerRight {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-md);
 }
 
 .statusBadge {
@@ -110,10 +110,66 @@
   line-height: 1.4;
 }
 
+.subtaskBadge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text3);
+  font-variant-numeric: tabular-nums;
+}
+
 .commentCount {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-sm);
   font-size: 11px;
   color: var(--text3);
+}
+
+/* ── Selection ── */
+
+.selected {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px var(--accent-glow), inset 3px 0 0 var(--accent) !important;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 6%, var(--surface3)) 0%, color-mix(in srgb, var(--accent) 3%, var(--surface2)) 100%) !important;
+}
+
+.selectBox {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid var(--border2);
+  background: var(--surface3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast);
+  opacity: 0;
+}
+
+.card:hover .selectBox,
+.selectBoxChecked {
+  opacity: 1 !important;
+}
+
+.selectBoxChecked {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--btn-primary-text);
+  box-shadow: 0 0 5px var(--accent-glow);
+}
+
+.selectBox:hover:not(.selectBoxChecked) {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.card {
+  position: relative;
 }

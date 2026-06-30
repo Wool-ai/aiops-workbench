@@ -1,26 +1,26 @@
-const SMITHERY = 'https://registry.smithery.ai';
+const MCPJUNGLE_URL = process.env.MCPJUNGLE_URL || 'http://localhost:8080';
 
 export default async function handler(req, res) {
-  const { q = '', page = 1, detail } = req.query;
+  if (req.method !== 'GET') return res.status(405).end();
+
+  const { q = '' } = req.query;
 
   try {
-    if (detail) {
-      // Fetch full server info including connections / configSchema
-      const r = await fetch(`${SMITHERY}/servers/${encodeURIComponent(detail)}`, {
-        headers: { Accept: 'application/json' },
-      });
-      if (!r.ok) return res.status(r.status).json({ error: 'Not found' });
-      const data = await r.json();
-      return res.json(data);
-    }
-
-    // Search
-    const url = `${SMITHERY}/servers?q=${encodeURIComponent(q)}&page=${page}&pageSize=20`;
-    const r = await fetch(url, { headers: { Accept: 'application/json' } });
-    if (!r.ok) return res.status(r.status).json({ error: 'Smithery error' });
-    const data = await r.json();
-    return res.json(data);
+    const r = await fetch(`${MCPJUNGLE_URL}/api/v0/tools`, {
+      signal: AbortSignal.timeout(4000),
+      headers: { Accept: 'application/json' },
+    });
+    if (!r.ok) return res.status(r.status).json({ tools: [], error: `MCPJungle returned ${r.status}` });
+    const body = await r.json();
+    const tools = Array.isArray(body) ? body : (body.tools || []);
+    const filtered = q
+      ? tools.filter(t =>
+          (t.name || '').toLowerCase().includes(q.toLowerCase()) ||
+          (t.description || '').toLowerCase().includes(q.toLowerCase())
+        )
+      : tools;
+    return res.json({ tools: filtered, total: filtered.length });
   } catch (e) {
-    return res.status(500).json({ error: e.message });
+    return res.status(500).json({ tools: [], error: e.message });
   }
 }

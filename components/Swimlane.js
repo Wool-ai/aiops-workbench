@@ -116,7 +116,7 @@ function AddBucketRow({ onAdd }) {
   );
 }
 
-export default function Swimlane({ project, displayTasks, isFiltered, onToggle, onTaskClick, onAddTask, onMoveTask, onAddBucket, onRemoveBucket, onOpenWorkspace, onRunAll }) {
+export default function Swimlane({ project, displayTasks, isFiltered, onToggle, onTaskClick, onAddTask, onMoveTask, onAddBucket, onRemoveBucket, onOpenWorkspace, onRunAll, selectedTasks, onSelectTask }) {
   const [viewMode, setViewMode] = useState('status');
 
   const sensors = useSensors(
@@ -264,7 +264,14 @@ export default function Swimlane({ project, displayTasks, isFiltered, onToggle, 
                 );
               } else if (buckets.length === 0) {
                 cardContent = tasks.map(task => (
-                  <TaskCard key={task.id} task={task} col={col} onClick={() => onTaskClick(task)} />
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    col={col}
+                    onClick={() => onTaskClick(task)}
+                    selected={selectedTasks?.has(task.id)}
+                    onSelect={onSelectTask}
+                  />
                 ));
               } else {
                 const grouped = {};
@@ -295,7 +302,14 @@ export default function Swimlane({ project, displayTasks, isFiltered, onToggle, 
                           )}
                         </div>
                         {grouped[b].map(task => (
-                          <TaskCard key={task.id} task={task} col={col} onClick={() => onTaskClick(task)} />
+                          <TaskCard
+                            key={task.id}
+                            task={task}
+                            col={col}
+                            onClick={() => onTaskClick(task)}
+                            selected={selectedTasks?.has(task.id)}
+                            onSelect={onSelectTask}
+                          />
                         ))}
                       </div>
                     ))}
@@ -303,7 +317,14 @@ export default function Swimlane({ project, displayTasks, isFiltered, onToggle, 
                       <div className={styles.colBucketGroup}>
                         {hasBucketedTasks && <div className={styles.colBucketLabel}>Other</div>}
                         {uncat.map(task => (
-                          <TaskCard key={task.id} task={task} col={col} onClick={() => onTaskClick(task)} />
+                          <TaskCard
+                            key={task.id}
+                            task={task}
+                            col={col}
+                            onClick={() => onTaskClick(task)}
+                            selected={selectedTasks?.has(task.id)}
+                            onSelect={onSelectTask}
+                          />
                         ))}
                       </div>
                     )}

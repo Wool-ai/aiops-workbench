@@ -29,7 +29,7 @@
   justify-content: space-between;
   padding: 18px 20px 14px;
   border-bottom: 1px solid var(--border);
-  gap: 12px;
+  gap: var(--space-lg);
   flex-shrink: 0;
 }
 
@@ -55,7 +55,7 @@
 .dirPath {
   font-size: 11px;
   color: var(--text3);
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: var(--font-mono);
   margin-top: 2px;
   word-break: break-all;
 }
@@ -64,13 +64,13 @@
   background: none;
   border: none;
   color: var(--text3);
-  padding: 4px;
+  padding: var(--space-sm);
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: color 0.12s, background 0.12s;
+  transition: color var(--transition-fast), background var(--transition-fast);
 }
 
 .closeBtn:hover {
@@ -98,7 +98,7 @@
   font-weight: 500;
   padding: 10px 12px 9px;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color var(--transition), border-color var(--transition);
   margin-bottom: -1px;
 }
 
@@ -135,7 +135,7 @@
   padding: 16px 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-lg);
   min-height: 0;
 }
 
@@ -153,11 +153,11 @@
   border-radius: var(--radius-sm);
   padding: 12px 14px;
   font-size: 13px;
-  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-family: var(--font-mono);
   color: var(--text);
   resize: vertical;
   line-height: 1.6;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--transition), box-shadow var(--transition);
 }
 
 .instructionsEditor:focus {
@@ -175,7 +175,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-lg);
   padding-top: 4px;
   flex-shrink: 0;
 }
@@ -196,7 +196,7 @@
   padding: 7px 16px;
   font-size: 13px;
   font-weight: 600;
-  transition: opacity 0.15s;
+  transition: opacity var(--transition);
 }
 
 .saveBtn:disabled { opacity: 0.6; }
@@ -214,7 +214,7 @@
   padding: 7px 14px;
   font-size: 13px;
   font-weight: 500;
-  transition: background 0.15s, opacity 0.15s;
+  transition: background var(--transition), opacity var(--transition);
 }
 
 .uploadBtn:disabled { opacity: 0.6; }
@@ -226,7 +226,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: var(--space-lg);
   padding: 32px 0;
   color: var(--text3);
   font-size: 13px;
@@ -235,7 +235,7 @@
 }
 
 .emptyFiles code {
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text2);
   background: var(--surface3);
@@ -246,19 +246,19 @@
 .fileList {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-sm);
   flex: 1;
 }
 
 .fileRow {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-md);
   padding: 8px 10px;
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  transition: border-color 0.12s;
+  transition: border-color var(--transition-fast);
 }
 
 .fileRow:hover { border-color: var(--border2); }
@@ -267,7 +267,7 @@
   flex: 1;
   font-size: 13px;
   color: var(--text);
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: var(--font-mono);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -289,21 +289,21 @@
   align-items: center;
   justify-content: center;
   opacity: 0.5;
-  transition: color 0.12s, opacity 0.12s, background 0.12s;
+  transition: color var(--transition-fast), opacity var(--transition-fast), background var(--transition-fast);
   flex-shrink: 0;
 }
 
 .deleteFileBtn:hover {
   color: var(--danger);
   opacity: 1;
-  background: rgba(240, 112, 112, 0.08);
+  background: var(--danger-glow);
 }
 
 .error {
   font-size: 12px;
   color: var(--danger);
-  background: rgba(240, 112, 112, 0.08);
-  border: 1px solid rgba(240, 112, 112, 0.2);
+  background: var(--danger-glow);
+  border: 1px solid color-mix(in srgb, var(--danger) 20%, transparent);
   border-radius: var(--radius-sm);
   padding: 8px 10px;
 }
@@ -315,3 +315,296 @@
 .spinIcon {
   animation: spin 0.8s linear infinite;
 }
+
+/* ── Artifacts ───────────────────────────────────────────────── */
+
+.artListHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  flex-shrink: 0;
+}
+
+.artNewBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  color: var(--btn-primary-text);
+  border-radius: var(--radius-sm);
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: 0 0 8px var(--accent-glow);
+  transition: filter var(--transition), box-shadow var(--transition);
+}
+
+.artNewBtn:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 0 14px var(--accent-glow-strong);
+}
+
+.artList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.artCard {
+  background: linear-gradient(160deg, var(--surface2) 0%, var(--surface) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 11px 13px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.03);
+  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.artCard:hover {
+  background: linear-gradient(160deg, var(--surface3) 0%, var(--surface2) 100%);
+  border-color: var(--border2);
+  box-shadow: var(--shadow-md);
+}
+
+.artCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.artCardName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artCardMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.artTypeBadge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border-radius: var(--radius-xs);
+  padding: 2px 7px;
+}
+
+.artCardDate {
+  font-size: 10.5px;
+  color: var(--text3);
+}
+
+.artCardPreview {
+  font-size: 11.5px;
+  color: var(--text3);
+  line-height: 1.5;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  font-family: var(--font-mono);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.artCardActions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.artDeleteBtn {
+  background: none;
+  border: none;
+  color: var(--text3);
+  padding: 3px;
+  border-radius: var(--radius-xs);
+  display: flex;
+  align-items: center;
+  opacity: 0.4;
+  transition: color var(--transition-fast), opacity var(--transition-fast), background var(--transition-fast);
+}
+
+.artCard:hover .artDeleteBtn { opacity: 1; }
+
+.artDeleteBtn:hover {
+  color: var(--danger);
+  background: var(--danger-glow);
+}
+
+.artDeleteMsg {
+  font-size: 11px;
+  color: var(--danger);
+}
+
+.artConfirmYes {
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--danger-glow);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  color: var(--danger);
+  border-radius: var(--radius-xs);
+  padding: 2px 7px;
+  transition: background var(--transition-fast);
+}
+
+.artConfirmYes:hover { background: color-mix(in srgb, var(--danger) 18%, transparent); }
+
+.artConfirmNo {
+  font-size: 11px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text3);
+  border-radius: var(--radius-xs);
+  padding: 2px 7px;
+  transition: background var(--transition-fast);
+}
+
+.artConfirmNo:hover { background: var(--surface3); color: var(--text2); }
+
+/* ── Artifact editor ── */
+
+.artEditorHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.artBackBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text3);
+  border-radius: var(--radius-sm);
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: color var(--transition), background var(--transition);
+}
+
+.artBackBtn:hover { color: var(--text2); background: var(--surface3); }
+
+.artEditorTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.artFormRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.artFormGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.artLabel {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text3);
+}
+
+.artInput {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--text);
+  font-family: inherit;
+  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+  width: 100%;
+}
+
+.artInput:focus {
+  outline: none;
+  background: var(--surface4);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.artSelect {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--text);
+  font-family: inherit;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  width: 110px;
+}
+
+.artSelect:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.artEditor {
+  flex: 1;
+  min-height: 220px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 12.5px;
+  font-family: var(--font-mono);
+  color: var(--text);
+  resize: vertical;
+  line-height: 1.6;
+  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+}
+
+.artEditor:focus {
+  outline: none;
+  background: var(--surface4);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.artEditor::placeholder {
+  color: var(--text3);
+  opacity: 0.6;
+}
+
+.artCancelBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text3);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background var(--transition), color var(--transition);
+}
+
+.artCancelBtn:hover { background: var(--surface3); color: var(--text2); }

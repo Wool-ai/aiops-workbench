@@ -6,6 +6,57 @@
   min-width: 550px;
 }
 
+/* ── Search bar ── */
+
+.searchBar {
+  position: relative;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.searchInput {
+  flex: 1;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 32px 7px 30px;
+  font-size: 12.5px;
+  color: var(--text);
+  transition: border-color var(--transition), box-shadow var(--transition);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%233e5278' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 9px center;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.searchInput::placeholder {
+  color: var(--text3);
+}
+
+.clearSearch {
+  position: absolute;
+  right: 9px;
+  background: transparent;
+  border: none;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  padding: 3px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: color var(--transition);
+}
+
+.clearSearch:hover {
+  color: var(--text2);
+}
+
 .markAllReadBtn {
   background: transparent;
   border: 1px solid var(--border);
@@ -15,7 +66,7 @@
   font-size: 12px;
   margin-left: auto;
   margin-bottom: 2px;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color var(--transition), border-color var(--transition);
 }
 
 .markAllReadBtn:hover {
@@ -47,7 +98,7 @@
   letter-spacing: 0.02em;
   padding: 7px 10px;
   margin-bottom: -1px;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color var(--transition), border-color var(--transition);
 }
 
 .filterBtn:hover {
@@ -89,7 +140,7 @@
   flex-direction: column;
   gap: 10px;
   box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.04);
-  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
 }
 
 .card:hover {
@@ -107,7 +158,7 @@
 .card_issue              { border-left: 3px solid var(--review-c); }
 .card_human_input        { border-left: 3px solid var(--inprog-c); }
 .card_processing         { border-left: 3px solid var(--text3); }
-.card_permission_required { border-left: 3px solid #c084fc; }
+.card_permission_required { border-left: 3px solid var(--mcp-c); }
 
 /* ── Card header ─────────────────────────────── */
 
@@ -115,23 +166,23 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-lg);
   flex-wrap: wrap;
 }
 
 .scheduledBadge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-sm);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   padding: 2px 7px;
   border-radius: 20px;
-  background: rgba(99,102,241,0.12);
-  color: #818cf8;
-  border: 1px solid rgba(99,102,241,0.25);
+  background: var(--scheduled-bg);
+  color: var(--scheduled-c);
+  border: 1px solid color-mix(in srgb, var(--scheduled-c) 25%, transparent);
 }
 
 .typeBadge {
@@ -151,7 +202,7 @@
 .badge_issue              { background: var(--review-bg);      color: var(--review-c); }
 .badge_human_input        { background: var(--inprog-bg);      color: var(--inprog-c); }
 .badge_processing         { background: var(--surface3);       color: var(--text3); }
-.badge_permission_required { background: rgba(192,132,252,0.12); color: #c084fc; }
+.badge_permission_required { background: color-mix(in srgb, var(--mcp-c) 12%, transparent); color: var(--mcp-c); }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
@@ -173,7 +224,7 @@
   color: var(--text3);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-sm);
 }
 
 .sep {
@@ -204,9 +255,132 @@
 }
 
 .processingMsg {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.processingIdle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   color: var(--text3);
   font-style: italic;
+}
+
+/* ── Tool activity feed ───────────────────────── */
+
+.toolActivityFeed {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+}
+
+.toolActivityItem {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.01em;
+  line-height: 1.5;
+}
+
+.toolActivityDone {
+  color: var(--text3);
+}
+
+.toolActivityDone svg {
+  color: color-mix(in srgb, var(--accent) 50%, transparent);
+  flex-shrink: 0;
+}
+
+.toolActivityActive {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.toolActivityActive svg {
+  flex-shrink: 0;
+}
+
+/* Streaming text output (non-JSON) during processing */
+.streamText {
+  font-size: 12px;
+  color: var(--text2);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.65;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+/* ── Markdown rendering ───────────────────────── */
+
+.mdBody {
+  font-size: 12.5px;
+  color: var(--text2);
+  line-height: 1.65;
+}
+
+.mdH1 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: 10px;
+  margin-bottom: 5px;
+}
+
+.mdH2 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: var(--space-md);
+  margin-bottom: 4px;
+}
+
+.mdH3 {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 6px;
+  margin-bottom: 3px;
+}
+
+.mdP {
+  margin-bottom: 3px;
+}
+
+.mdLi {
+  display: flex;
+  gap: 7px;
+  padding-left: 4px;
+  margin-bottom: 2px;
+}
+
+.mdBullet {
+  color: var(--accent);
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.mdHr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 8px 0;
+}
+
+.mdSpacer {
+  height: 5px;
 }
 
 /* ── Thread ──────────────────────────────────── */
@@ -223,7 +397,7 @@
 
 .threadEntry {
   display: flex;
-  gap: 8px;
+  gap: var(--space-md);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -246,19 +420,19 @@
 /* ── Permission denials ──────────────────────── */
 
 .deniedOps {
-  background: rgba(192, 132, 252, 0.05);
-  border: 1px solid rgba(192, 132, 252, 0.2);
+  background: color-mix(in srgb, var(--mcp-c) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mcp-c) 20%, transparent);
   border-radius: var(--radius-sm);
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-md);
 }
 
 .deniedOpsTitle {
   font-size: 11px;
   font-weight: 600;
-  color: #c084fc;
+  color: var(--mcp-c);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   margin-bottom: 2px;
@@ -267,7 +441,7 @@
 .deniedOp {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--space-md);
 }
 
 .toolBadge {
@@ -281,10 +455,10 @@
   font-family: var(--font-mono);
 }
 
-.tool_Bash   { background: rgba(250,204,21,0.1); color: #fbbf24; }
-.tool_Write  { background: rgba(59,130,246,0.1); color: #60a5fa; }
-.tool_Edit   { background: rgba(59,130,246,0.1); color: #60a5fa; }
-.tool_Read   { background: rgba(100,116,139,0.1); color: #94a3b8; }
+.tool_Bash   { background: color-mix(in srgb, var(--tool-bash) 10%, transparent); color: var(--tool-bash); }
+.tool_Write  { background: color-mix(in srgb, var(--tool-write) 10%, transparent); color: var(--tool-write); }
+.tool_Edit   { background: color-mix(in srgb, var(--tool-write) 10%, transparent); color: var(--tool-write); }
+.tool_Read   { background: color-mix(in srgb, var(--tool-read) 10%, transparent); color: var(--tool-read); }
 
 .opDetail {
   font-family: var(--font-mono);
@@ -303,21 +477,21 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(192, 132, 252, 0.12);
-  border: 1px solid rgba(192, 132, 252, 0.4);
-  color: #c084fc;
+  background: color-mix(in srgb, var(--mcp-c) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mcp-c) 40%, transparent);
+  color: var(--mcp-c);
   border-radius: var(--radius-sm);
   padding: 6px 14px;
   font-size: 12px;
   font-weight: 600;
   margin-top: 4px;
   align-self: flex-start;
-  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+  transition: background var(--transition), border-color var(--transition), opacity var(--transition);
 }
 
 .approveBtn:hover:not(:disabled) {
-  background: rgba(192, 132, 252, 0.2);
-  border-color: rgba(192, 132, 252, 0.7);
+  background: color-mix(in srgb, var(--mcp-c) 20%, transparent);
+  border-color: color-mix(in srgb, var(--mcp-c) 70%, transparent);
 }
 
 .approveBtn:disabled {
@@ -339,7 +513,7 @@
   font-size: 12px;
   font-weight: 500;
   align-self: flex-start;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition: color var(--transition), border-color var(--transition), background var(--transition);
 }
 
 .replyTrigger:hover {
@@ -352,7 +526,7 @@
 .replyArea {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-md);
 }
 
 .replyInput {
@@ -375,7 +549,7 @@
 
 .replyActions {
   display: flex;
-  gap: 8px;
+  gap: var(--space-md);
   justify-content: flex-end;
 }
 
@@ -386,7 +560,7 @@
   border-radius: var(--radius-sm);
   padding: 5px 11px;
   font-size: 12px;
-  transition: color 0.15s, background 0.15s;
+  transition: color var(--transition), background var(--transition);
 }
 
 .cancelReplyBtn:hover {
@@ -403,7 +577,7 @@
   font-size: 12px;
   font-weight: 600;
   box-shadow: 0 0 8px var(--accent-glow);
-  transition: background 0.15s, opacity 0.15s;
+  transition: background var(--transition), opacity var(--transition);
 }
 
 .sendReplyBtn:disabled {
@@ -417,13 +591,15 @@
 
 /* ── Log viewer ──────────────────────────────── */
 
+/* ── Log viewer ──────────────────────────────── */
+
 .logViewer {
   display: flex;
   flex-direction: column;
   gap: 0;
   border-top: 1px solid var(--border);
-  padding-top: 8px;
-  margin-top: 2px;
+  padding-top: 10px;
+  margin-top: 4px;
 }
 
 .logToggle {
@@ -438,8 +614,9 @@
   padding: 3px 4px;
   border-radius: var(--radius-sm);
   text-align: left;
-  transition: color 0.15s, background 0.15s;
+  transition: color var(--transition), background var(--transition);
   width: fit-content;
+  cursor: pointer;
 }
 
 .logToggle:hover {
@@ -447,55 +624,384 @@
   background: var(--surface2);
 }
 
-.logFileName {
-  font-family: var(--font-mono);
+.logToolCount {
   font-size: 10px;
+  font-weight: 600;
   color: var(--text3);
   background: var(--surface3);
-  border: 1px solid var(--border2);
-  padding: 1px 6px;
-  border-radius: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0px 6px;
+}
+
+.logCostChip {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text3);
   margin-left: 2px;
 }
 
 .logBody {
-  margin-top: 8px;
-  background: var(--bg);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius-sm);
+  margin-top: var(--space-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   overflow: hidden;
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.04);
 }
 
-.logLoading,
-.logError {
-  display: block;
-  padding: 12px 16px;
+.logLoading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: 14px 16px;
   font-size: 12px;
   color: var(--text3);
 }
 
 .logError {
+  display: block;
+  padding: 12px 16px;
+  font-size: 12px;
   color: var(--danger);
 }
 
 .logPre {
   font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 1.6;
+  font-size: 10.5px;
+  line-height: 1.65;
   color: var(--text2);
   padding: 14px 16px;
   overflow-x: auto;
   overflow-y: auto;
-  max-height: 480px;
+  max-height: 500px;
   white-space: pre;
   margin: 0;
+}
+
+/* ── Parsed log view ─────────────────────────── */
+
+.logParsed {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header bar */
+.logHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px 9px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.logHeaderLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.logHeaderTask {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logHeaderTime {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 10.5px;
+  color: var(--text3);
+  font-variant-numeric: tabular-nums;
+}
+
+.logHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.logMetaChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 10px;
+  color: var(--text3);
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  padding: 2px 7px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── Tool timeline ───────────────────────────── */
+
+.logTimeline {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 0 6px;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.logEntry {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-width: 0;
+  padding: 0 10px 0 12px;
+}
+
+.logEntryLast {
+  /* last entry — no change needed, handled by isLast prop */
+}
+
+/* Timeline track (dot + line) */
+.logEntryTrack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 18px;
+  padding-top: 9px;
+}
+
+.logEntryDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.logEntryLine {
+  width: 1px;
+  flex: 1;
+  background: var(--border);
+  margin-top: 3px;
+  min-height: 10px;
+}
+
+/* Entry content */
+.logEntryBody {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 6px;
+}
+
+.logEntryHeader {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  min-width: 0;
+  transition: background 0.1s;
+}
+
+.logEntryHeaderClickable {
+  cursor: pointer;
+}
+
+.logEntryHeaderClickable:hover {
+  background: var(--surface2);
+}
+
+.logEntryIconWrap {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  opacity: 0.85;
+}
+
+.logEntryName {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text);
+  flex-shrink: 0;
+  text-transform: capitalize;
+}
+
+.logEntryInput {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.logEntryIndex {
+  font-size: 9.5px;
+  color: var(--text3);
+  font-family: var(--font-mono);
+  margin-left: auto;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.logEntryChevron {
+  flex-shrink: 0;
+  color: var(--text3);
+  transition: transform var(--transition);
+  margin-left: 2px;
+}
+
+.logEntryChevronOpen {
+  transform: rotate(180deg);
+}
+
+.logEntryResult {
+  margin: 0 8px 6px 8px;
+}
+
+.logEntryResultPre {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--text2);
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 11px;
+  margin: 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+/* Text output from Claude */
+.logTextBlock {
+  margin: 4px 8px 8px 8px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 15%, transparent);
+  border-radius: var(--radius-sm);
+}
+
+.logEmpty {
+  padding: 18px 16px;
+  font-size: 12px;
+  color: var(--text3);
+  text-align: center;
+  font-style: italic;
+}
+
+/* ── Result footer ───────────────────────────── */
+
+.logResultFooter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: 11px 14px 12px;
+  border-top: 1px solid var(--border);
+  border-left: 3px solid var(--border2);
+  background: var(--surface2);
+}
+
+.logResultTop {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.logResultBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-radius: var(--radius-xs);
+  padding: 2px 8px;
+  flex-shrink: 0;
+}
+
+.logResultMsg {
+  font-size: 11.5px;
+  color: var(--text2);
+  line-height: 1.5;
+  flex: 1;
+  min-width: 0;
+}
+
+.logResultStats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logStat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 10.5px;
+  font-family: var(--font-mono);
+  color: var(--text2);
+  font-variant-numeric: tabular-nums;
+}
+
+.logStatLabel {
+  font-size: 9.5px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.logStatCost {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text2);
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
+}
+
+/* Raw log toggle */
+.logRawToggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--border);
+  color: var(--text3);
+  font-size: 10.5px;
+  padding: 7px 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast);
+  width: 100%;
+}
+
+.logRawToggle:hover {
+  color: var(--text2);
+  background: var(--surface2);
+}
+
+.logRawWrap {
+  display: flex;
+  flex-direction: column;
 }
 
 /* ── Card footer ─────────────────────────────── */
 
 .cardFooter {
   display: flex;
-  gap: 8px;
+  gap: var(--space-md);
   padding-top: 4px;
   border-top: 1px solid var(--border);
   margin-top: 2px;
@@ -511,7 +1017,7 @@
   font-size: 12px;
   padding: 4px 8px;
   border-radius: var(--radius-sm);
-  transition: color 0.15s, background 0.15s;
+  transition: color var(--transition), background var(--transition);
 }
 
 .markReadBtn:hover {
@@ -529,13 +1035,13 @@
   font-size: 12px;
   padding: 4px 8px;
   border-radius: var(--radius-sm);
-  transition: color 0.15s, background 0.15s;
+  transition: color var(--transition), background var(--transition);
   margin-left: auto;
 }
 
 .dismissBtn:hover {
   color: var(--danger);
-  background: rgba(240, 112, 112, 0.06);
+  background: color-mix(in srgb, var(--danger) 6%, transparent);
 }
 
 .openTaskBtn {
@@ -548,11 +1054,71 @@
   font-size: 12px;
   padding: 4px 8px;
   border-radius: var(--radius-sm);
-  transition: color 0.15s, background 0.15s;
+  transition: color var(--transition), background var(--transition);
 }
 
 .openTaskBtn:hover {
   background: var(--accent-glow);
+}
+
+/* ── Artifact chips ──────────────────────────── */
+
+.artifactChips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 0 4px;
+  border-top: 1px solid var(--border);
+  margin-top: 10px;
+}
+
+.artifactChipsLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-right: 2px;
+  flex-shrink: 0;
+}
+
+.artifactChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px 3px 4px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+  max-width: 260px;
+}
+.artifactChip:hover {
+  background: var(--surface3);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.artifactChipType {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.artifactChipName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ── Empty state ─────────────────────────────── */
@@ -561,7 +1127,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-lg);
   padding: 70px 20px;
   color: var(--text3);
   font-size: 12px;

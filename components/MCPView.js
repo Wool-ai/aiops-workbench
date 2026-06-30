@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import styles from '../styles/MCPView.module.css';
 
-// ── Public server registry ────────────────────────────────────────────────────
+// ── Curated server list (quick-add) ──────────────────────────────────────────
 
 const REGISTRY = [
   {
@@ -196,41 +196,44 @@ const ALL_TAGS = [...new Set(REGISTRY.flatMap(c => c.servers.flatMap(s => s.tags
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function ServerTypeBadge({ type }) {
-  return (
-    <span className={type === 'sse' ? styles.badgeSSE : styles.badgeStdio}>
-      {type === 'sse' ? 'SSE' : 'stdio'}
-    </span>
-  );
+function TransportBadge({ transport }) {
+  const label = transport === 'streamable_http' ? 'HTTP' : transport === 'stdio' ? 'stdio' : 'SSE';
+  return <span className={transport === 'stdio' ? styles.badgeStdio : styles.badgeSSE}>{label}</span>;
 }
 
-// ── Add / Edit form ───────────────────────────────────────────────────────────
+// ── Server registration form ──────────────────────────────────────────────────
 
-const EMPTY_CUSTOM = {
-  key: '',
-  type: 'stdio',
+const EMPTY_FORM = {
+  name: '',
+  transport: 'streamable_http',
+  url: '',
   command: '',
   args: '',
-  url: '',
+  description: '',
+  bearerToken: '',
   envPairs: [{ k: '', v: '' }],
 };
 
 function ServerForm({ initial, onSave, onCancel }) {
   const [form, setForm] = useState(() => {
-    if (!initial) return EMPTY_CUSTOM;
-    const cfg = initial.config;
+    if (!initial) return EMPTY_FORM;
+    const cfg = initial.config || {};
+    const isStdio = !!cfg.command;
     const envPairs = Object.entries(cfg.env || {}).map(([k, v]) => ({ k, v }));
     return {
-      key: initial.key,
-      type: cfg.type === 'sse' ? 'sse' : 'stdio',
+      name: initial.key || initial.name || '',
+      transport: isStdio ? 'stdio' : cfg.type === 'sse' ? 'sse' : 'streamable_http',
+      url: cfg.url || '',
       command: cfg.command || '',
       args: (cfg.args || []).join(' '),
-      url: cfg.url || '',
+      description: initial.description || '',
+      bearerToken: '',
       envPairs: envPairs.length ? envPairs : [{ k: '', v: '' }],
     };
   });
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })); }
+
   function setEnv(i, field, val) {
     setForm(f => {
       const pairs = [...f.envPairs];
@@ -238,55 +241,63 @@ function ServerForm({ initial, onSave, onCancel }) {
       return { ...f, envPairs: pairs };
     });
   }
+
   function addEnvRow() { setForm(f => ({ ...f, envPairs: [...f.envPairs, { k: '', v: '' }] })); }
-  function removeEnvRow(i) {
-    setForm(f => ({ ...f, envPairs: f.envPairs.filter((_, idx) => idx !== i) }));
-  }
+  function removeEnvRow(i) { setForm(f => ({ ...f, envPairs: f.envPairs.filter((_, idx) => idx !== i) })); }
 
   function submit(e) {
     e.preventDefault();
-    if (!form.key.trim()) return;
+    if (!form.name.trim()) return;
     const env = Object.fromEntries(form.envPairs.filter(p => p.k.trim()).map(p => [p.k.trim(), p.v]));
-    let cfg;
-    if (form.type === 'sse') {
-      cfg = { type: 'sse', url: form.url.trim() };
+    const payload = {
+      name: form.name.trim(),
+      transport: form.transport,
+      description: form.description.trim(),
+    };
+    if (form.transport === 'stdio') {
+      payload.command = form.command.trim();
+      payload.args = form.args.trim() ? form.args.trim().split(/\s+/) : [];
+      if (Object.keys(env).length) payload.env = env;
     } else {
-      const args = form.args.trim() ? form.args.trim().split(/\s+/) : [];
-      cfg = { command: form.command.trim(), args };
+      payload.url = form.url.trim();
+      if (form.bearerToken.trim()) payload.bearerToken = form.bearerToken.trim();
     }
-    if (Object.keys(env).length) cfg.env = env;
-    onSave({ key: form.key.trim(), config: cfg });
+    onSave(payload);
   }
 
   return (
     <form className={styles.serverForm} onSubmit={submit}>
       <div className={styles.formField}>
-        <label className={styles.formLabel}>Server name (key)</label>
+        <label className={styles.formLabel}>Server name</label>
         <input
           className={styles.formInput}
-          value={form.key}
-          onChange={e => set('key', e.target.value)}
+          value={form.name}
+          onChange={e => set('name', e.target.value)}
           placeholder="e.g. github"
           required
-          disabled={!!initial}
+          disabled={!!initial?.key}
         />
       </div>
 
       <div className={styles.formField}>
-        <label className={styles.formLabel}>Type</label>
+        <label className={styles.formLabel}>Transport</label>
         <div className={styles.typeToggle}>
-          {['stdio', 'sse'].map(t => (
+          {[
+            { id: 'streamable_http', label: 'HTTP' },
+            { id: 'sse', label: 'SSE' },
+            { id: 'stdio', label: 'stdio' },
+          ].map(t => (
             <button
-              key={t}
+              key={t.id}
               type="button"
-              className={`${styles.typeBtn} ${form.type === t ? styles.typeBtnOn : ''}`}
-              onClick={() => set('type', t)}
-            >{t.toUpperCase()}</button>
+              className={`${styles.typeBtn} ${form.transport === t.id ? styles.typeBtnOn : ''}`}
+              onClick={() => set('transport', t.id)}
+            >{t.label}</button>
           ))}
         </div>
       </div>
 
-      {form.type === 'stdio' ? (
+      {form.transport === 'stdio' ? (
         <>
           <div className={styles.formField}>
             <label className={styles.formLabel}>Command</label>
@@ -295,34 +306,47 @@ function ServerForm({ initial, onSave, onCancel }) {
           <div className={styles.formField}>
             <label className={styles.formLabel}>Arguments</label>
             <input className={styles.formInput} value={form.args} onChange={e => set('args', e.target.value)} placeholder="-y @modelcontextprotocol/server-github" />
-            <span className={styles.formHint}>Space-separated. Will be split into an array.</span>
+            <span className={styles.formHint}>Space-separated.</span>
           </div>
         </>
       ) : (
-        <div className={styles.formField}>
-          <label className={styles.formLabel}>Server URL</label>
-          <input className={styles.formInput} value={form.url} onChange={e => set('url', e.target.value)} placeholder="https://mcp.example.com/sse" required />
-        </div>
+        <>
+          <div className={styles.formField}>
+            <label className={styles.formLabel}>Server URL</label>
+            <input className={styles.formInput} value={form.url} onChange={e => set('url', e.target.value)} placeholder="https://mcp.example.com/mcp" required />
+          </div>
+          <div className={styles.formField}>
+            <label className={styles.formLabel}>Bearer token <span className={styles.formOptional}>(optional)</span></label>
+            <input className={styles.formInput} type="password" value={form.bearerToken} onChange={e => set('bearerToken', e.target.value)} placeholder="Token for authenticated servers" />
+          </div>
+        </>
       )}
 
       <div className={styles.formField}>
-        <label className={styles.formLabel}>Environment variables</label>
-        <div className={styles.envRows}>
-          {form.envPairs.map((pair, i) => (
-            <div key={i} className={styles.envRow}>
-              <input className={styles.envKey} value={pair.k} onChange={e => setEnv(i, 'k', e.target.value)} placeholder="KEY" />
-              <input className={styles.envVal} value={pair.v} onChange={e => setEnv(i, 'v', e.target.value)} placeholder="value" />
-              {form.envPairs.length > 1 && (
-                <button type="button" className={styles.envRemove} onClick={() => removeEnvRow(i)}>×</button>
-              )}
-            </div>
-          ))}
-          <button type="button" className={styles.envAdd} onClick={addEnvRow}>+ Add variable</button>
-        </div>
+        <label className={styles.formLabel}>Description <span className={styles.formOptional}>(optional)</span></label>
+        <input className={styles.formInput} value={form.description} onChange={e => set('description', e.target.value)} placeholder="What this server does" />
       </div>
 
+      {form.transport === 'stdio' && (
+        <div className={styles.formField}>
+          <label className={styles.formLabel}>Environment variables</label>
+          <div className={styles.envRows}>
+            {form.envPairs.map((pair, i) => (
+              <div key={i} className={styles.envRow}>
+                <input className={styles.envKey} value={pair.k} onChange={e => setEnv(i, 'k', e.target.value)} placeholder="KEY" />
+                <input className={styles.envVal} value={pair.v} onChange={e => setEnv(i, 'v', e.target.value)} placeholder="value" />
+                {form.envPairs.length > 1 && (
+                  <button type="button" className={styles.envRemove} onClick={() => removeEnvRow(i)}>×</button>
+                )}
+              </div>
+            ))}
+            <button type="button" className={styles.envAdd} onClick={addEnvRow}>+ Add variable</button>
+          </div>
+        </div>
+      )}
+
       <div className={styles.formActions}>
-        <button type="submit" className={styles.saveBtn}>{initial ? 'Save changes' : 'Add server'}</button>
+        <button type="submit" className={styles.saveBtn}>Register server</button>
         <button type="button" className={styles.cancelBtn} onClick={onCancel}>Cancel</button>
       </div>
     </form>
@@ -331,15 +355,38 @@ function ServerForm({ initial, onSave, onCancel }) {
 
 // ── Configured servers tab ────────────────────────────────────────────────────
 
-function ConfiguredTab({ servers, onEdit, onRemove, onAddCustom }) {
+function ConfiguredTab({ servers, connected, onToggle, onRemove, onAddCustom }) {
+  if (!connected) {
+    return (
+      <div className={styles.disconnected}>
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.25 }}>
+          <circle cx="12" cy="12" r="3"/><path d="M12 2v2m0 16v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M2 12h2m16 0h2M4.22 19.78l1.42-1.42M17.66 6.34l1.42-1.42"/>
+        </svg>
+        <span className={styles.disconnectedTitle}>MCPJungle not reachable</span>
+        <span className={styles.disconnectedDesc}>
+          Start MCPJungle at <code>localhost:8080</code> to manage servers here.
+          Claude still connects via <code>mcp-config.json</code> when MCPJungle is running.
+        </span>
+        <a
+          className={styles.disconnectedLink}
+          href="https://docs.mcpjungle.com/installation.md"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Installation guide →
+        </a>
+      </div>
+    );
+  }
+
   if (Object.keys(servers).length === 0) {
     return (
       <div className={styles.empty}>
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.25 }}>
           <circle cx="12" cy="12" r="3"/><path d="M12 2v2m0 16v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M2 12h2m16 0h2M4.22 19.78l1.42-1.42M17.66 6.34l1.42-1.42"/>
         </svg>
-        <span>No MCP servers configured yet</span>
-        <button className={styles.emptyBtn} onClick={onAddCustom}>Add your first server</button>
+        <span>No servers registered in MCPJungle yet</span>
+        <button className={styles.emptyBtn} onClick={onAddCustom}>Register your first server</button>
       </div>
     );
   }
@@ -347,37 +394,55 @@ function ConfiguredTab({ servers, onEdit, onRemove, onAddCustom }) {
   return (
     <div className={styles.configuredList}>
       {Object.entries(servers).map(([key, cfg]) => {
-        const isSSE = cfg.type === 'sse';
+        const transport = cfg._transport || (cfg.command ? 'stdio' : 'streamable_http');
+        const enabled = cfg._enabled !== false;
         const envKeys = Object.keys(cfg.env || {});
         return (
-          <div key={key} className={styles.configuredCard}>
+          <div key={key} className={`${styles.configuredCard} ${!enabled ? styles.configuredCardDisabled : ''}`}>
             <div className={styles.configuredTop}>
               <div className={styles.configuredName}>
-                <ServerTypeBadge type={isSSE ? 'sse' : 'stdio'} />
+                <TransportBadge transport={transport} />
                 <span>{key}</span>
+                {!enabled && <span className={styles.disabledBadge}>disabled</span>}
               </div>
               <div className={styles.configuredActions}>
-                <button className={styles.editBtn} onClick={() => onEdit(key, cfg)} title="Edit">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                  </svg>
-                  Edit
+                <button
+                  className={enabled ? styles.disableBtn : styles.enableBtn}
+                  onClick={() => onToggle(key, enabled)}
+                  title={enabled ? 'Disable' : 'Enable'}
+                >
+                  {enabled ? (
+                    <>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                      </svg>
+                      Disable
+                    </>
+                  ) : (
+                    <>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      Enable
+                    </>
+                  )}
                 </button>
-                <button className={styles.removeBtn} onClick={() => onRemove(key)} title="Remove">
+                <button className={styles.removeBtn} onClick={() => onRemove(key)} title="Deregister">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+                    <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
                   </svg>
                   Remove
                 </button>
               </div>
             </div>
             <div className={styles.configuredMeta}>
-              {isSSE ? (
-                <code className={styles.configPre}>{cfg.url}</code>
-              ) : (
+              {cfg.command ? (
                 <code className={styles.configPre}>{[cfg.command, ...(cfg.args || [])].join(' ')}</code>
+              ) : (
+                <code className={styles.configPre}>{cfg.url}</code>
               )}
+              {cfg._description && <span className={styles.configDesc}>{cfg._description}</span>}
             </div>
             {envKeys.length > 0 && (
               <div className={styles.envChips}>
@@ -396,82 +461,45 @@ function ConfiguredTab({ servers, onEdit, onRemove, onAddCustom }) {
   );
 }
 
-// ── Smithery live search ──────────────────────────────────────────────────────
+// ── MCPJungle live tools viewer ───────────────────────────────────────────────
 
-function SmitheryResults({ configured, onAdd }) {
+function MCPJungleTools({ connected }) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState(null); // null = not searched yet
+  const [tools, setTools] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [adding, setAdding] = useState(null); // qualifiedName being fetched
-
+  const inputRef = useRef(null);
   const debounceRef = useRef(null);
 
-  const search = useCallback((q, pg = 1) => {
+  const load = useCallback((q = '') => {
+    if (!connected) return;
     setLoading(true);
     setError('');
-    fetch(`/api/mcp-registry?q=${encodeURIComponent(q)}&page=${pg}`)
+    fetch(`/api/mcp-registry${q ? `?q=${encodeURIComponent(q)}` : ''}`)
       .then(r => r.json())
       .then(d => {
-        if (d.error) { setError(d.error); setResults([]); return; }
-        setResults(d.servers || []);
-        setTotalPages(d.pagination?.totalPages || 1);
-        setPage(pg);
+        setTools(d.tools || []);
+        if (d.error) setError(d.error);
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [connected]);
+
+  useEffect(() => { load(); }, [load]);
 
   function handleInput(e) {
     const q = e.target.value;
     setQuery(q);
     clearTimeout(debounceRef.current);
-    if (!q.trim()) { setResults(null); return; }
-    debounceRef.current = setTimeout(() => search(q, 1), 420);
+    debounceRef.current = setTimeout(() => load(q), 350);
   }
 
-  async function handleAdd(server) {
-    setAdding(server.qualifiedName);
-    try {
-      const r = await fetch(`/api/mcp-registry?detail=${encodeURIComponent(server.qualifiedName)}`);
-      const detail = await r.json();
-      const conn = (detail.connections || [])[0];
-      let prefillConfig;
-      if (conn?.type === 'http' && conn.deploymentUrl) {
-        prefillConfig = { type: 'sse', url: conn.deploymentUrl };
-      } else if (conn?.type === 'stdio') {
-        prefillConfig = { command: conn.command || '', args: conn.args || [] };
-      } else if (server.remote && detail.deploymentUrl) {
-        prefillConfig = { type: 'sse', url: detail.deploymentUrl };
-      } else {
-        prefillConfig = { command: '', args: [] };
-      }
-      // Extract required env vars from configSchema if present
-      const schemaProps = conn?.configSchema?.properties || {};
-      if (Object.keys(schemaProps).length > 0) {
-        prefillConfig.env = Object.fromEntries(Object.keys(schemaProps).map(k => [k, '']));
-      }
-      onAdd({
-        id: server.qualifiedName,
-        name: server.displayName,
-        type: prefillConfig.type === 'sse' ? 'sse' : 'stdio',
-        config: prefillConfig,
-        docs: `https://smithery.ai/servers/${server.qualifiedName}`,
-      });
-    } catch {
-      // Fallback: open form with minimal prefill
-      onAdd({
-        id: server.qualifiedName,
-        name: server.displayName,
-        type: server.remote ? 'sse' : 'stdio',
-        config: server.remote ? { type: 'sse', url: '' } : { command: '', args: [] },
-        docs: `https://smithery.ai/servers/${server.qualifiedName}`,
-      });
-    } finally {
-      setAdding(null);
-    }
+  if (!connected) {
+    return (
+      <div className={styles.smitheryHint}>
+        Connect MCPJungle at <code>localhost:8080</code> to see available tools from your registered servers.
+      </div>
+    );
   }
 
   return (
@@ -481,93 +509,44 @@ function SmitheryResults({ configured, onAdd }) {
           <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
         </svg>
         <input
+          ref={inputRef}
           className={styles.smitheryInput}
           value={query}
           onChange={handleInput}
-          placeholder="Search Smithery registry (1000+ servers)…"
+          placeholder="Search available tools from MCPJungle…"
         />
         {loading && <span className={styles.smitherySpin} />}
-        {query && !loading && <button className={styles.discoverClear} onClick={() => { setQuery(''); setResults(null); }}>×</button>}
+        {query && !loading && (
+          <button className={styles.discoverClear} onClick={() => { setQuery(''); load(); }}>×</button>
+        )}
       </div>
 
       {error && <div className={styles.smitheryError}>{error}</div>}
 
-      {results === null && !loading && (
+      {!loading && tools.length === 0 && !error && (
         <div className={styles.smitheryHint}>
-          Type to search the live Smithery registry — remote and stdio MCP servers indexed from the community.
+          {query
+            ? `No tools match "${query}".`
+            : 'No tools found. Register servers in the Configured tab to expose their tools here.'}
         </div>
       )}
 
-      {results !== null && results.length === 0 && !loading && (
-        <div className={styles.noResults}>No servers found for "{query}"</div>
-      )}
-
-      {results && results.length > 0 && (
-        <>
-          <div className={styles.smitheryResults}>
-            {results.map(s => {
-              const key = s.qualifiedName;
-              const isInstalled = !!configured[key];
-              const isAdding = adding === key;
-              return (
-                <div key={key} className={`${styles.smitheryCard} ${isInstalled ? styles.registryCardInstalled : ''}`}>
-                  <div className={styles.smitheryCardLeft}>
-                    <div className={styles.smitheryCardName}>
-                      <ServerTypeBadge type={s.remote ? 'sse' : 'stdio'} />
-                      <span className={styles.registryName}>{s.displayName}</span>
-                      {s.verified && (
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" title="Verified">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                      )}
-                    </div>
-                    <p className={styles.smitheryCardDesc}>{s.description}</p>
-                    <span className={styles.smitheryUses}>{s.useCount?.toLocaleString()} uses</span>
-                  </div>
-                  <div className={styles.registryBtns}>
-                    {isInstalled ? (
-                      <span className={styles.installedBadge}>Configured</span>
-                    ) : (
-                      <button
-                        className={styles.addBtn}
-                        onClick={() => handleAdd(s)}
-                        disabled={isAdding}
-                      >{isAdding ? '…' : 'Add'}</button>
-                    )}
-                    <a
-                      className={styles.smitheryDocs}
-                      href={s.homepage || `https://smithery.ai/servers/${key}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Docs"
-                    >
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                        <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-                      </svg>
-                    </a>
-                  </div>
+      {tools.length > 0 && (
+        <div className={styles.smitheryResults}>
+          {tools.map((tool, i) => (
+            <div key={tool.name || i} className={styles.smitheryCard}>
+              <div className={styles.smitheryCardLeft}>
+                <div className={styles.smitheryCardName}>
+                  <span className={styles.registryName}>{tool.name}</span>
+                  {tool.server_name && (
+                    <span className={styles.smitheryUses}>via {tool.server_name}</span>
+                  )}
                 </div>
-              );
-            })}
-          </div>
-
-          {totalPages > 1 && (
-            <div className={styles.smitheryPager}>
-              <button
-                className={styles.pagerBtn}
-                disabled={page <= 1}
-                onClick={() => search(query, page - 1)}
-              >← Prev</button>
-              <span className={styles.pagerInfo}>Page {page} / {totalPages}</span>
-              <button
-                className={styles.pagerBtn}
-                disabled={page >= totalPages}
-                onClick={() => search(query, page + 1)}
-              >Next →</button>
+                {tool.description && <p className={styles.smitheryCardDesc}>{tool.description}</p>}
+              </div>
             </div>
-          )}
-        </>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -575,7 +554,7 @@ function SmitheryResults({ configured, onAdd }) {
 
 // ── Discover tab ──────────────────────────────────────────────────────────────
 
-function DiscoverTab({ configured, onAdd }) {
+function DiscoverTab({ servers, connected, onAdd }) {
   const [search, setSearch] = useState('');
   const [activeTag, setActiveTag] = useState('');
   const [expanded, setExpanded] = useState(null);
@@ -592,11 +571,11 @@ function DiscoverTab({ configured, onAdd }) {
 
   return (
     <div className={styles.discoverPane}>
-      {/* Live Smithery search at top */}
-      <SmitheryResults configured={configured} onAdd={onAdd} />
+      {/* Live MCPJungle tools at top */}
+      <MCPJungleTools connected={connected} />
 
       <div className={styles.curatedDivider}>
-        <span className={styles.curatedLabel}>Curated picks</span>
+        <span className={styles.curatedLabel}>Curated picks — register via MCPJungle</span>
       </div>
 
       <div className={styles.discoverSearch}>
@@ -634,14 +613,14 @@ function DiscoverTab({ configured, onAdd }) {
           <div key={cat.category} className={styles.registryCategory}>
             <div className={styles.categoryLabel}>{cat.category}</div>
             {cat.servers.map(server => {
-              const isInstalled = !!configured[server.id];
+              const isInstalled = !!servers[server.id];
               const isOpen = expanded === server.id;
               return (
                 <div key={server.id} className={`${styles.registryCard} ${isInstalled ? styles.registryCardInstalled : ''}`}>
                   <div className={styles.registryTop} onClick={() => setExpanded(isOpen ? null : server.id)}>
                     <div className={styles.registryInfo}>
                       <div className={styles.registryNameRow}>
-                        <ServerTypeBadge type={server.type} />
+                        <TransportBadge transport={server.type} />
                         <span className={styles.registryName}>{server.name}</span>
                         <span className={styles.registryAuthor}>{server.author}</span>
                       </div>
@@ -652,15 +631,15 @@ function DiscoverTab({ configured, onAdd }) {
                     </div>
                     <div className={styles.registryBtns}>
                       {isInstalled ? (
-                        <span className={styles.installedBadge}>Configured</span>
+                        <span className={styles.installedBadge}>Registered</span>
                       ) : (
                         <button
                           className={styles.addBtn}
                           onClick={e => { e.stopPropagation(); onAdd(server); }}
-                        >Add</button>
+                        >Register</button>
                       )}
                       <button className={styles.expandBtn} onClick={e => { e.stopPropagation(); setExpanded(isOpen ? null : server.id); }}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform var(--transition)' }}>
                           <polyline points="6 9 12 15 18 9"/>
                         </svg>
                       </button>
@@ -700,52 +679,91 @@ function DiscoverTab({ configured, onAdd }) {
 
 export default function MCPView() {
   const [servers, setServers] = useState({});
+  const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('configured');
-  const [panel, setPanel] = useState(null); // null | 'add' | { key, config } for edit
+  const [panel, setPanel] = useState(null); // null | 'add' | { prefill }
   const [saving, setSaving] = useState(false);
+  const [actionError, setActionError] = useState('');
+
+  async function reload() {
+    try {
+      const r = await fetch('/api/mcp-servers');
+      const d = await r.json();
+      setServers(d.mcpServers || {});
+      setConnected(d.connected || false);
+    } catch {
+      setConnected(false);
+    }
+  }
 
   useEffect(() => {
-    fetch('/api/mcp-servers')
-      .then(r => r.json())
-      .then(d => { setServers(d.mcpServers || {}); setLoading(false); })
-      .catch(() => setLoading(false));
+    reload().finally(() => setLoading(false));
   }, []);
 
-  async function persist(updated) {
+  async function handleSave(serverData) {
     setSaving(true);
+    setActionError('');
     try {
-      const res = await fetch('/api/mcp-servers', {
-        method: 'PUT',
+      const r = await fetch('/api/mcp-servers', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mcpServers: updated }),
+        body: JSON.stringify(serverData),
       });
-      const data = await res.json();
-      setServers(data.mcpServers || {});
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Registration failed');
+      await reload();
+      setPanel(null);
+    } catch (e) {
+      setActionError(e.message);
     } finally {
       setSaving(false);
     }
   }
 
-  function handleSave({ key, config }) {
-    const updated = { ...servers, [key]: config };
-    persist(updated);
-    setPanel(null);
+  async function handleRemove(name) {
+    setSaving(true);
+    setActionError('');
+    try {
+      const r = await fetch(`/api/mcp-servers?name=${encodeURIComponent(name)}`, { method: 'DELETE' });
+      if (!r.ok) throw new Error('Deregistration failed');
+      await reload();
+    } catch (e) {
+      setActionError(e.message);
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function handleRemove(key) {
-    const updated = { ...servers };
-    delete updated[key];
-    persist(updated);
-  }
-
-  function handleEdit(key, cfg) {
-    setPanel({ key, config: cfg });
-    setTab('configured');
+  async function handleToggle(name, currentlyEnabled) {
+    setSaving(true);
+    setActionError('');
+    try {
+      const action = currentlyEnabled ? 'disable' : 'enable';
+      const r = await fetch('/api/mcp-servers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, action }),
+      });
+      if (!r.ok) throw new Error(`${action} failed`);
+      await reload();
+    } catch (e) {
+      setActionError(e.message);
+    } finally {
+      setSaving(false);
+    }
   }
 
   function handleAddFromRegistry(server) {
-    setPanel({ prefill: server });
+    const isStdio = !!server.config?.command;
+    setPanel({
+      prefill: {
+        name: server.name,
+        key: server.id,
+        description: server.description || '',
+        config: server.config,
+      },
+    });
     setTab('configured');
   }
 
@@ -759,6 +777,12 @@ export default function MCPView() {
           <div className={styles.headerLeft}>
             <span className={styles.title}>MCP Servers</span>
             {serverCount > 0 && <span className={styles.countBadge}>{serverCount}</span>}
+            {connected && (
+              <span className={styles.connectedBadge} title="MCPJungle connected">
+                <span className={styles.connectedDot} />
+                MCPJungle
+              </span>
+            )}
             {saving && <span className={styles.savingDot} title="Saving…" />}
           </div>
           <div className={styles.headerRight}>
@@ -774,67 +798,67 @@ export default function MCPView() {
             <button
               className={styles.newBtn}
               onClick={() => { setPanel('add'); setTab('configured'); }}
+              disabled={!connected}
+              title={connected ? 'Register a custom server' : 'Start MCPJungle to register servers'}
             >
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
               </svg>
-              Add custom
+              Register
             </button>
           </div>
         </div>
 
+        {actionError && (
+          <div className={styles.actionError}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            {actionError}
+            <button className={styles.actionErrorClose} onClick={() => setActionError('')}>×</button>
+          </div>
+        )}
+
         <div className={styles.body}>
           {loading ? (
-            <div className={styles.empty}><span>Loading…</span></div>
+            <div className={styles.empty}><span>Connecting to MCPJungle…</span></div>
           ) : tab === 'configured' ? (
             <ConfiguredTab
               servers={servers}
-              onEdit={handleEdit}
+              connected={connected}
+              onToggle={handleToggle}
               onRemove={handleRemove}
               onAddCustom={() => setPanel('add')}
             />
           ) : (
             <DiscoverTab
-              configured={servers}
+              servers={servers}
+              connected={connected}
               onAdd={handleAddFromRegistry}
             />
           )}
         </div>
       </div>
 
-      {/* ── Right: add/edit panel ── */}
+      {/* ── Right: register / edit panel ── */}
       {panel && (
         <div className={styles.formPanel}>
           <div className={styles.formPanelHeader}>
             <span className={styles.formPanelTitle}>
-              {panel === 'add' ? 'Add custom server' : panel.prefill ? `Add "${panel.prefill.name}"` : `Edit "${panel.key}"`}
+              {panel === 'add' ? 'Register custom server' : `Register "${panel.prefill?.name}"`}
             </span>
-            <button className={styles.formPanelClose} onClick={() => setPanel(null)}>
+            <button className={styles.formPanelClose} onClick={() => { setPanel(null); setActionError(''); }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
             </button>
           </div>
 
-          {panel.prefill ? (
-            // Pre-fill from registry
-            <ServerForm
-              initial={{
-                key: panel.prefill.id,
-                config: panel.prefill.config,
-              }}
-              onSave={handleSave}
-              onCancel={() => setPanel(null)}
-            />
-          ) : panel === 'add' ? (
-            <ServerForm onSave={handleSave} onCancel={() => setPanel(null)} />
-          ) : (
-            <ServerForm
-              initial={{ key: panel.key, config: panel.config }}
-              onSave={handleSave}
-              onCancel={() => setPanel(null)}
-            />
-          )}
+          <ServerForm
+            initial={panel === 'add' ? null : panel.prefill}
+            onSave={handleSave}
+            onCancel={() => { setPanel(null); setActionError(''); }}
+          />
         </div>
       )}
     </div>

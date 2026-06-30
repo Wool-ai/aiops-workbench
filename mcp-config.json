@@ -2,7 +2,13 @@
   "mcpServers": {
     "aiops": {
       "command": "node",
-      "args": ["/Users/<user>/Desktop/ai/aiops-workbench/mcp-server.mjs"]
+      "args": [
+        "/Users/<user>/Desktop/ai/aiops-workbench/mcp-server.mjs"
+      ]
+    },
+    "mcpjungle": {
+      "type": "sse",
+      "url": "http://localhost:8080/sse"
     }
   }
 }

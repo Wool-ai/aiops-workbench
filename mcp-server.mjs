@@ -1,7 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, unlinkSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -268,8 +268,30 @@ server.tool(
 );
 
 server.tool(
+  'get_task_comments',
+  'Return all comments on a specific task.',
+  {
+    project_id: z.string().describe('Project id.'),
+    task_id:    z.string().describe('Task id from get_project_tasks.'),
+  },
+  async ({ project_id, task_id }) => {
+    const { projects = [] } = read();
+    const project = projects.find(p => p.id === project_id);
+    if (!project) return text(`No project with id "${project_id}".`);
+    const task = project.tasks?.find(t => t.id === task_id);
+    if (!task) return text(`No task with id "${task_id}" in "${project.name}".`);
+    const comments = task.comments || [];
+    if (!comments.length) return text(`Task "${task.name}" has no comments.`);
+    return text(JSON.stringify(
+      comments.map((c, i) => ({ index: i, author: c.author, text: c.text, time: c.time })),
+      null, 2
+    ));
+  }
+);
+
+server.tool(
   'add_comment',
-  'Add a comment to a task.',
+  'Add a comment to a task. Use get_task_comments to read existing comments.',
   {
     project_id: z.string().describe('Project id.'),
     task_id:    z.string().describe('Task id.'),
@@ -281,11 +303,12 @@ server.tool(
     const project = data.projects?.find(p => p.id === project_id);
     if (!project) return text(`No project with id "${project_id}".`);
     const task = project.tasks?.find(t => t.id === task_id);
-    if (!task) return text(`No task with id "${task_id}".`);
+    if (!task) return text(`No task with id "${task_id}" in "${project.name}".`);
     task.comments = task.comments || [];
-    task.comments.push({ author, text: text_body, time: new Date().toLocaleString() });
+    const comment = { author: author.trim(), text: text_body.trim(), time: new Date().toISOString() };
+    task.comments.push(comment);
     write(data);
-    return text(`Added comment to "${task.name}" by ${author}.`);
+    return text(`Added comment to "${task.name}" by ${author}. Task now has ${task.comments.length} comment(s).`);
   }
 );
 
@@ -535,6 +558,190 @@ server.tool(
       })),
       null, 2
     ));
+  }
+);
+
+// ── Artifact filesystem helpers ───────────────────────────────────────────────
+
+const WORKSPACE_ROOT = join(__dirname, 'workspace');
+
+function slugify(name) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+function artifactExt(type, lang) {
+  if (type === 'json') return '.json';
+  if (type === 'markdown') return '.md';
+  if (type === 'code' && lang) {
+    const map = {
+      python: '.py', py: '.py', typescript: '.ts', ts: '.ts',
+      javascript: '.js', js: '.js', rust: '.rs', go: '.go',
+      java: '.java', css: '.css', html: '.html',
+      bash: '.sh', shell: '.sh', sh: '.sh', sql: '.sql',
+      yaml: '.yaml', yml: '.yaml', ruby: '.rb', php: '.php',
+      swift: '.swift', kotlin: '.kt', c: '.c', cpp: '.cpp', cs: '.cs',
+    };
+    return map[lang.toLowerCase()] || `.${lang.toLowerCase()}`;
+  }
+  return '.txt';
+}
+
+function sanitizeArtifactName(name) {
+  return name.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+}
+
+function artifactDir(projectId, bucket) {
+  const safeProject = projectId.replace(/[^a-zA-Z0-9_-]/g, '');
+  if (bucket) {
+    return join(WORKSPACE_ROOT, safeProject, 'buckets', slugify(bucket), 'artifacts');
+  }
+  return join(WORKSPACE_ROOT, safeProject, 'uncategorized', 'artifacts');
+}
+
+function writeArtifactFile(projectId, bucket, id, name, type, lang, content) {
+  const dir = artifactDir(projectId, bucket);
+  mkdirSync(dir, { recursive: true });
+  const filename = id + '--' + sanitizeArtifactName(name) + artifactExt(type, lang);
+  const fullPath = join(dir, filename);
+  writeFileSync(fullPath, content, 'utf8');
+  // Return path relative to __dirname (app root)
+  return fullPath.startsWith(__dirname + '/')
+    ? fullPath.slice(__dirname.length + 1)
+    : fullPath;
+}
+
+function readArtifactContent(filePath) {
+  if (!filePath) return '';
+  const fullPath = filePath.startsWith('/') ? filePath : join(__dirname, filePath);
+  try { return readFileSync(fullPath, 'utf8'); }
+  catch { return ''; }
+}
+
+function deleteArtifactFile(filePath) {
+  if (!filePath) return;
+  const fullPath = filePath.startsWith('/') ? filePath : join(__dirname, filePath);
+  try { unlinkSync(fullPath); } catch {}
+}
+
+// ── Artifacts ─────────────────────────────────────────────────────────────────
+
+server.tool(
+  'list_artifacts',
+  'List all artifacts in a project workspace. Artifacts are named outputs (text, code, markdown, JSON) produced during project work.',
+  { project_id: z.string().describe('Project id from list_projects.') },
+  async ({ project_id }) => {
+    const { projects = [] } = read();
+    const project = projects.find(p => p.id === project_id);
+    if (!project) return text(`No project with id "${project_id}".`);
+    const artifacts = project.artifacts || [];
+    if (!artifacts.length) return text(`Project "${project.name}" has no artifacts yet.`);
+    return text(JSON.stringify(
+      artifacts.map(a => {
+        const content = a.filePath ? readArtifactContent(a.filePath) : (a.content || '');
+        return {
+          id:        a.id,
+          name:      a.name,
+          type:      a.type,
+          lang:      a.lang || '',
+          bucket:    a.bucket || '',
+          filePath:  a.filePath || '',
+          preview:   content.slice(0, 120) + (content.length > 120 ? '…' : ''),
+          createdAt: a.createdAt,
+          updatedAt: a.updatedAt,
+        };
+      }),
+      null, 2
+    ));
+  }
+);
+
+server.tool(
+  'create_artifact',
+  'Create a new artifact in a project. Use this to save generated outputs — reports, code, plans, summaries, etc. The content is stored as a file in the project workspace.',
+  {
+    project_id: z.string().describe('Project id.'),
+    name:       z.string().describe('Artifact name, e.g. "Architecture Plan" or "setup.py".'),
+    type:       z.enum(['text', 'markdown', 'code', 'json']).describe('Artifact type.'),
+    content:    z.string().describe('The full content of the artifact.'),
+    lang:       z.string().optional().describe('Programming language for code artifacts, e.g. "python", "typescript".'),
+    bucket:     z.string().optional().describe('Work bucket name to scope the artifact under (e.g. the current task bucket). Omit for project-level artifacts.'),
+  },
+  async ({ project_id, name, type, content, lang, bucket }) => {
+    const data = read();
+    const project = data.projects?.find(p => p.id === project_id);
+    if (!project) return text(`No project with id "${project_id}".`);
+    project.artifacts = project.artifacts || [];
+    const id = 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    const filePath = writeArtifactFile(project_id, bucket || '', id, name.trim(), type, lang || '', content);
+    const artifact = {
+      id,
+      name:      name.trim(),
+      type,
+      lang:      lang || '',
+      bucket:    bucket || '',
+      filePath,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    project.artifacts.push(artifact);
+    write(data);
+    return text(`Created artifact "${artifact.name}" (id: ${artifact.id}) in "${project.name}" at ${filePath}.`);
+  }
+);
+
+server.tool(
+  'update_artifact',
+  'Update an existing artifact — change its name, type, language, or replace its content.',
+  {
+    project_id:  z.string().describe('Project id.'),
+    artifact_id: z.string().describe('Artifact id from list_artifacts.'),
+    name:        z.string().optional().describe('New name.'),
+    type:        z.enum(['text', 'markdown', 'code', 'json']).optional(),
+    lang:        z.string().optional().describe('Programming language (for code type).'),
+    content:     z.string().optional().describe('Full replacement content.'),
+  },
+  async ({ project_id, artifact_id, name, type, lang, content }) => {
+    const data = read();
+    const project = data.projects?.find(p => p.id === project_id);
+    if (!project) return text(`No project with id "${project_id}".`);
+    const artifact = (project.artifacts || []).find(a => a.id === artifact_id);
+    if (!artifact) return text(`No artifact with id "${artifact_id}" in "${project.name}".`);
+
+    const newName    = name    !== undefined ? name.trim()  : artifact.name;
+    const newType    = type    !== undefined ? type         : artifact.type;
+    const newLang    = lang    !== undefined ? lang         : artifact.lang;
+    const newContent = content !== undefined ? content      : readArtifactContent(artifact.filePath);
+
+    deleteArtifactFile(artifact.filePath);
+    const filePath = writeArtifactFile(project_id, artifact.bucket || '', artifact.id, newName, newType, newLang, newContent);
+
+    artifact.name      = newName;
+    artifact.type      = newType;
+    artifact.lang      = newLang;
+    artifact.filePath  = filePath;
+    artifact.updatedAt = new Date().toISOString();
+    write(data);
+    return text(`Updated artifact "${artifact.name}" at ${filePath}.`);
+  }
+);
+
+server.tool(
+  'delete_artifact',
+  'Permanently delete an artifact from a project.',
+  {
+    project_id:  z.string().describe('Project id.'),
+    artifact_id: z.string().describe('Artifact id from list_artifacts.'),
+  },
+  async ({ project_id, artifact_id }) => {
+    const data = read();
+    const project = data.projects?.find(p => p.id === project_id);
+    if (!project) return text(`No project with id "${project_id}".`);
+    const artifact = (project.artifacts || []).find(a => a.id === artifact_id);
+    if (!artifact) return text(`No artifact with id "${artifact_id}".`);
+    deleteArtifactFile(artifact.filePath);
+    project.artifacts = project.artifacts.filter(a => a.id !== artifact_id);
+    write(data);
+    return text(`Deleted artifact "${artifact.name}" from "${project.name}".`);
   }
 );
 

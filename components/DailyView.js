@@ -192,6 +192,7 @@ export default function DailyView({ dailyTasks = [], onSave, onDelete, onToggleD
   const [date, setDate] = useState(todayBase);
   const [editing, setEditing] = useState(null);
   const [nowPx, setNowPx] = useState(null);
+  const [search, setSearch] = useState('');
   const gridRef = useRef(null);
   const scrolledRef = useRef(false);
 
@@ -224,7 +225,10 @@ export default function DailyView({ dailyTasks = [], onSave, onDelete, onToggleD
   const isToday = sameDay(date, todayBase);
   const weekend = isWeekend(date);
 
-  const dayTasks = dailyTasks.filter(t => occursOn(t, date));
+  const q = search.trim().toLowerCase();
+  const matchSearch = t => !q || t.name.toLowerCase().includes(q) || (t.desc || '').toLowerCase().includes(q);
+
+  const dayTasks = dailyTasks.filter(t => occursOn(t, date) && matchSearch(t));
   const doneTodayCount = dayTasks.filter(t => doneOn(t, date)).length;
 
   const byHour = {};
@@ -233,8 +237,8 @@ export default function DailyView({ dailyTasks = [], onSave, onDelete, onToggleD
     (byHour[h] || (byHour[h] = [])).push(t);
   }
 
-  const weekdayList = dailyTasks.filter(t => t.days === 'weekday' || t.days === 'both');
-  const weekendList = dailyTasks.filter(t => t.days === 'weekend' || t.days === 'both');
+  const weekdayList = dailyTasks.filter(t => (t.days === 'weekday' || t.days === 'both') && matchSearch(t));
+  const weekendList = dailyTasks.filter(t => (t.days === 'weekend' || t.days === 'both') && matchSearch(t));
 
   const dateLabel = `${WEEKDAYS[date.getDay()]}, ${MONTHS[date.getMonth()]} ${date.getDate()}`;
 
@@ -256,6 +260,23 @@ export default function DailyView({ dailyTasks = [], onSave, onDelete, onToggleD
             </svg>
             New
           </button>
+        </div>
+
+        <div className={styles.searchBar}>
+          <input
+            className={styles.searchInput}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search tasks…"
+            aria-label="Search daily tasks"
+          />
+          {search && (
+            <button className={styles.clearSearch} onClick={() => setSearch('')} aria-label="Clear search">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          )}
         </div>
 
         <div className={styles.asideScroll}>

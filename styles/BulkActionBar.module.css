@@ -1,0 +1,165 @@
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.55),
+    0 0 0 1px var(--border),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+
+  animation: slideUp 0.18s ease;
+  white-space: nowrap;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-shrink: 0;
+}
+
+.clearBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text3);
+  border-radius: var(--radius-xs);
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.clearBtn:hover {
+  background: var(--surface4);
+  color: var(--text);
+  border-color: var(--border2);
+}
+
+.count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.actionSelect {
+  background: var(--surface4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text2);
+  font-size: 12px;
+  font-family: inherit;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+  appearance: none;
+  padding-right: 24px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%235f6d83' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 7px center;
+}
+
+.actionSelect:hover {
+  border-color: var(--border2);
+  color: var(--text);
+}
+
+.actionSelect:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.deleteBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  color: var(--danger);
+  border-radius: var(--radius-sm);
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.deleteBtn:hover {
+  background: var(--danger-glow);
+  border-color: var(--danger);
+}
+
+.deleteConfirmRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.deleteMsg {
+  font-size: 12px;
+  color: var(--danger);
+  font-weight: 500;
+}
+
+.deleteYes {
+  background: var(--danger-glow);
+  border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent);
+  color: var(--danger);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.deleteYes:hover {
+  background: color-mix(in srgb, var(--danger) 20%, transparent);
+  border-color: var(--danger);
+}
+
+.deleteNo {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text3);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font-size: 12px;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.deleteNo:hover {
+  background: var(--surface4);
+  color: var(--text2);
+}

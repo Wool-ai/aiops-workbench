@@ -3,6 +3,57 @@
   min-width: 550px;
 }
 
+/* ── Search bar ── */
+
+.searchBar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.searchInput {
+  flex: 1;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 32px 7px 30px;
+  font-size: 12.5px;
+  color: var(--text);
+  transition: border-color var(--transition), box-shadow var(--transition);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%233e5278' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 9px center;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.searchInput::placeholder {
+  color: var(--text3);
+}
+
+.clearSearch {
+  position: absolute;
+  right: 9px;
+  background: transparent;
+  border: none;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  padding: 3px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: color var(--transition);
+}
+
+.clearSearch:hover {
+  color: var(--text2);
+}
+
 /* ── Header ──────────────────────────────────────────────────────────────── */
 
 .header {
@@ -15,7 +66,7 @@
 .headerLeft {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-md);
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -35,7 +86,7 @@
   font-size: 12px;
   font-weight: 600;
   box-shadow: 0 0 8px var(--accent-glow);
-  transition: background 0.15s, box-shadow 0.15s;
+  transition: background var(--transition), box-shadow var(--transition);
 }
 
 .newBtn:hover {
@@ -46,7 +97,7 @@
 
 .filters {
   display: flex;
-  gap: 4px;
+  gap: var(--space-sm);
   border-bottom: 1px solid var(--border);
   margin-bottom: 16px;
 }
@@ -64,7 +115,7 @@
   letter-spacing: 0.02em;
   padding: 7px 10px;
   margin-bottom: -1px;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color var(--transition), border-color var(--transition);
 }
 
 .filterBtn:hover { color: var(--text2); }
@@ -86,7 +137,7 @@
 }
 
 .badgeOverdue {
-  background: rgba(240, 112, 112, 0.15);
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
   color: var(--danger);
   border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
 }
@@ -110,7 +161,7 @@
   border-radius: var(--radius);
   padding: 11px 13px;
   box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.04);
-  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
 }
 
 .card:hover {
@@ -140,7 +191,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color var(--transition), background var(--transition);
 }
 
 .check:hover { border-color: var(--done-c); }
@@ -192,7 +243,7 @@
 .dateChip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-sm);
   font-size: 10.5px;
   color: var(--text3);
   background: var(--surface3);
@@ -235,7 +286,7 @@
   padding: 3px;
   border-radius: var(--radius-sm);
   opacity: 0;
-  transition: color 0.15s, opacity 0.15s, background 0.15s;
+  transition: color var(--transition), opacity var(--transition), background var(--transition);
   flex-shrink: 0;
 }
 
@@ -252,7 +303,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-lg);
   padding: 70px 20px;
   color: var(--text3);
   font-size: 12px;
@@ -304,10 +355,10 @@
   background: transparent;
   border: none;
   color: var(--text3);
-  padding: 4px;
+  padding: var(--space-sm);
   display: flex;
   align-items: center;
-  transition: color 0.15s;
+  transition: color var(--transition);
 }
 
 .epClose:hover { color: var(--text); }
@@ -318,7 +369,7 @@
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-xl);
 }
 
 .fg { display: flex; flex-direction: column; gap: 6px; }
@@ -341,7 +392,7 @@
   font-size: 13px;
   color: var(--text);
   font-family: inherit;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--transition), box-shadow var(--transition);
 }
 
 .fi:focus, .ft:focus, .fsel:focus {
@@ -363,7 +414,7 @@
 .epFoot {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-md);
   padding: 14px 20px;
   border-top: 1px solid var(--border);
   flex-shrink: 0;
@@ -378,7 +429,7 @@
   border-radius: var(--radius-sm);
   padding: 6px 12px;
   font-size: 12px;
-  transition: background 0.15s;
+  transition: background var(--transition);
 }
 
 .delBtn:hover { background: var(--danger-glow); }
@@ -390,7 +441,7 @@
   border-radius: var(--radius-sm);
   padding: 5px 11px;
   font-size: 12px;
-  transition: color 0.15s, background 0.15s;
+  transition: color var(--transition), background var(--transition);
 }
 
 .cancelBtn:hover { color: var(--text2); background: var(--surface2); }
@@ -404,7 +455,7 @@
   font-size: 12px;
   font-weight: 600;
   box-shadow: 0 0 8px var(--accent-glow);
-  transition: filter 0.15s, opacity 0.15s;
+  transition: filter var(--transition), opacity var(--transition);
 }
 
 .saveBtn:disabled { opacity: 0.4; cursor: not-allowed; }

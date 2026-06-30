@@ -14,13 +14,13 @@
 .alertStrip {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-md);
 }
 
 .alertChip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-md);
   padding: 7px 13px;
   border-radius: var(--radius-sm);
   border: 1px solid color-mix(in srgb, var(--ac, var(--border2)) 40%, transparent);
@@ -30,7 +30,7 @@
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
-  transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s;
+  transition: opacity var(--transition), transform 0.1s, box-shadow var(--transition);
   backdrop-filter: blur(8px);
 }
 
@@ -85,8 +85,8 @@
   flex-direction: column;
   gap: 5px;
   overflow: hidden;
-  transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s, background 0.15s;
-  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.04);
+  transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition-fast), background var(--transition);
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.07);
 }
 
 /* Accent bottom line — dim at rest, vivid on hover */
@@ -125,7 +125,7 @@
   background: linear-gradient(160deg, var(--surface3) 0%, var(--surface2) 100%);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md), 0 0 0 1px var(--border2),
-              inset 0 1px 0 rgba(255,255,255,0.06);
+              inset 0 1px 0 rgba(255,255,255,0.09);
 }
 
 .kpiClickable:hover::after {
@@ -145,7 +145,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--space-md);
   margin-bottom: 2px;
 }
 
@@ -171,7 +171,7 @@
   justify-content: center;
   flex-shrink: 0;
   color: var(--acc, var(--accent));
-  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
 }
 
 .kpiClickable:hover .kpiIconBg {
@@ -203,6 +203,22 @@
   background: linear-gradient(90deg, var(--acc, var(--accent)), color-mix(in srgb, var(--acc, var(--accent)) 70%, #fff));
   border-radius: 2px;
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.kpiMiniBarFill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: shimmer 2.6s ease-in-out infinite;
 }
 
 .kpiSub {
@@ -217,7 +233,7 @@
   right: 13px;
   color: var(--text3);
   opacity: 0;
-  transition: opacity 0.15s, color 0.15s;
+  transition: opacity var(--transition), color var(--transition);
 }
 
 .kpiClickable:hover .kpiArrow {
@@ -230,7 +246,7 @@
 .body {
   display: grid;
   grid-template-columns: 1fr 300px;
-  gap: 12px;
+  gap: var(--space-lg);
   align-items: start;
 }
 
@@ -247,21 +263,21 @@
 .main {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-lg);
   min-width: 0;
 }
 
 .side {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-lg);
   min-width: 0;
 }
 
 .bottomRow {
   display: grid;
   grid-template-columns: 1fr 1.8fr;
-  gap: 12px;
+  gap: var(--space-lg);
   align-items: start;
 }
 
@@ -281,8 +297,8 @@
   display: flex;
   flex-direction: column;
   gap: 13px;
-  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.03);
-  transition: border-color 0.15s;
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.06);
+  transition: border-color var(--transition);
 }
 
 .card:hover {
@@ -293,7 +309,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--space-md);
 }
 
 .cardTitleWrap {
@@ -321,7 +337,7 @@
 .cardLink {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-sm);
   background: transparent;
   border: none;
   color: var(--accent);
@@ -330,7 +346,7 @@
   padding: 0;
   cursor: pointer;
   opacity: 0.75;
-  transition: opacity 0.15s;
+  transition: opacity var(--transition);
   white-space: nowrap;
 }
 
@@ -362,12 +378,12 @@
 .projectRow {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-md);
   padding: 12px 8px;
   border-bottom: 1px solid var(--border);
   border-radius: var(--radius-xs);
   margin: 0 -8px;
-  transition: background 0.12s;
+  transition: background var(--transition-fast);
 }
 
 .projectRow:hover {
@@ -386,7 +402,7 @@
 .projectMeta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-md);
 }
 
 .projectSwatch {
@@ -409,7 +425,7 @@
 .projectCounts {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-sm);
   flex-shrink: 0;
 }
 
@@ -489,7 +505,7 @@
   flex-direction: column;
   align-items: center;
   height: 100%;
-  gap: 4px;
+  gap: var(--space-sm);
 }
 
 .barCount {
@@ -563,7 +579,7 @@
   max-height: 290px;
   overflow-y: auto;
   margin: -4px;
-  padding: 4px;
+  padding: var(--space-sm);
 }
 
 .feedRow {
@@ -571,7 +587,7 @@
   gap: 10px;
   padding: 8px 8px;
   border-radius: var(--radius-xs);
-  transition: background 0.12s, opacity 0.15s;
+  transition: background var(--transition-fast), opacity var(--transition);
   cursor: default;
 }
 
@@ -769,7 +785,7 @@
   display: flex;
   align-items: flex-start;
   gap: 9px;
-  transition: opacity 0.15s;
+  transition: opacity var(--transition);
 }
 
 .miniRowDone {
@@ -836,7 +852,7 @@
   align-items: center;
   justify-content: center;
   margin-top: 2px;
-  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
 }
 
 .dailyChecked {

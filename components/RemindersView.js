@@ -202,24 +202,35 @@ const FILTERS = [
   { id: 'done',     label: 'Done' },
 ];
 
-export default function RemindersView({ reminders = [], projects = [], onSave, onDelete, onToggleDone }) {
+export default function RemindersView({ reminders = [], projects = [], selectedProjectId = '', onSave, onDelete, onToggleDone }) {
   const [filter, setFilter]   = useState('all');
   const [editing, setEditing] = useState(null);
+  const [search, setSearch]   = useState('');
 
   const now = new Date();
+  const q = search.trim().toLowerCase();
+
+  const projectFiltered = selectedProjectId
+    ? reminders.filter(r => r.projectId === selectedProjectId)
+    : reminders;
 
   const counts = {
-    all:      reminders.length,
-    upcoming: reminders.filter(r => !r.done && new Date(r.datetime) >= now).length,
-    overdue:  reminders.filter(r => !r.done && new Date(r.datetime) <  now).length,
-    done:     reminders.filter(r =>  r.done).length,
+    all:      projectFiltered.length,
+    upcoming: projectFiltered.filter(r => !r.done && new Date(r.datetime) >= now).length,
+    overdue:  projectFiltered.filter(r => !r.done && new Date(r.datetime) <  now).length,
+    done:     projectFiltered.filter(r =>  r.done).length,
   };
 
-  const visible = reminders
+  const visible = projectFiltered
     .filter(r => {
-      if (filter === 'upcoming') return !r.done && new Date(r.datetime) >= now;
-      if (filter === 'overdue')  return !r.done && new Date(r.datetime) <  now;
-      if (filter === 'done')     return  r.done;
+      if (filter === 'upcoming' && (r.done || new Date(r.datetime) < now)) return false;
+      if (filter === 'overdue'  && (r.done || new Date(r.datetime) >= now)) return false;
+      if (filter === 'done'     && !r.done) return false;
+      if (q) {
+        const inTitle = r.title.toLowerCase().includes(q);
+        const inNote  = (r.note || '').toLowerCase().includes(q);
+        if (!inTitle && !inNote) return false;
+      }
       return true;
     })
     .sort((a, b) => {
@@ -242,6 +253,23 @@ export default function RemindersView({ reminders = [], projects = [], onSave, o
           </svg>
           New reminder
         </button>
+      </div>
+
+      <div className={styles.searchBar}>
+        <input
+          className={styles.searchInput}
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search reminders…"
+          aria-label="Search reminders"
+        />
+        {search && (
+          <button className={styles.clearSearch} onClick={() => setSearch('')} aria-label="Clear search">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        )}
       </div>
 
       <div className={styles.filters}>

@@ -322,8 +322,8 @@ export default function DashboardView({ projects, notifications, dailyTasks, rem
   const alertItems = [
     ...(queuePerms > 0 ? [{
       label: `${queuePerms} task${queuePerms !== 1 ? 's' : ''} need${queuePerms === 1 ? 's' : ''} permission`,
-      color: '#c084fc',
-      bg: 'rgba(192,132,252,0.08)',
+      color: 'var(--mcp-c)',
+      bg: 'var(--mcp-glow)',
       onClick: () => onNavigate('queue'),
     }] : []),
     ...(queueNeeds > 0 ? [{

@@ -38,7 +38,11 @@
 
   /* Glass */
   --glass-bg: rgba(18, 22, 28, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.06);
+
+  /* Ambient background glow */
+  --ambient-glow:      rgba(99, 207, 255, 0.055);
+  --ambient-glow-soft: rgba(99, 207, 255, 0.028);
 
   /* Status colors */
   --todo-bg:   rgba(95, 109, 131, 0.10);
@@ -56,6 +60,53 @@
   --danger:        #ff707a;
   --danger-border: #59242a;
   --danger-glow:   rgba(255, 112, 122, 0.08);
+
+  /* Success / connected green */
+  --success-c:    #4ade80;
+  --success-bg:   rgba(74, 222, 128, 0.10);
+  --success-glow: rgba(74, 222, 128, 0.08);
+
+  /* Warning / missing orange */
+  --warning-c:  #f0c060;
+  --warning-bg: rgba(240, 192, 96, 0.08);
+
+  /* High priority orange */
+  --priority-high: #f0a060;
+
+  /* Tool-badge colors */
+  --tool-bash:  #fbbf24;
+  --tool-write: #60a5fa;
+  --tool-read:  #94a3b8;
+
+  /* Modal backdrop */
+  --modal-backdrop: rgba(6, 7, 9, 0.82);
+
+  /* Artifact type badges */
+  --artifact-text-c:     #96a4bb;
+  --artifact-text-bg:    rgba(150, 164, 187, 0.12);
+  --artifact-markdown-c: #63cfff;
+  --artifact-markdown-bg: rgba(99, 207, 255, 0.10);
+  --artifact-code-c:     #46d7a0;
+  --artifact-code-bg:    rgba(70, 215, 160, 0.10);
+  --artifact-json-c:     #ffba57;
+  --artifact-json-bg:    rgba(255, 186, 87, 0.10);
+
+  /* MCP / permission purple */
+  --mcp-c:    #c084fc;
+  --mcp-bg:   rgba(192, 132, 252, 0.10);
+  --mcp-glow: rgba(192, 132, 252, 0.08);
+
+  /* Scheduled badge indigo */
+  --scheduled-c:  #818cf8;
+  --scheduled-bg: rgba(99, 102, 241, 0.12);
+
+  /* Spacing scale */
+  --space-xs:  2px;
+  --space-sm:  4px;
+  --space-md:  8px;
+  --space-lg:  12px;
+  --space-xl:  16px;
+  --space-2xl: 20px;
 
   /* Geometry */
   --radius:    10px;
@@ -91,6 +142,9 @@
 
 /* ── Emerald Theme ───────────────────────────────────── */
 [data-theme="green"] {
+  --ambient-glow:      rgba(70, 215, 160, 0.05);
+  --ambient-glow-soft: rgba(70, 215, 160, 0.025);
+
   --accent:             #46d7a0;
   --accent-hover:       #63dfb0;
   --accent-glow:        rgba(70, 215, 160, 0.08);
@@ -110,6 +164,9 @@
 
 /* ── Mono Dark Theme ─────────────────────────────────── */
 [data-theme="dark"] {
+  --ambient-glow:      rgba(217, 221, 227, 0.04);
+  --ambient-glow-soft: rgba(217, 221, 227, 0.02);
+
   --bg:       #040405;
   --surface:  #0b0b0d;
   --surface2: #101114;
@@ -148,6 +205,9 @@
 
 /* ── Light Theme ─────────────────────────────────────── */
 [data-theme="white"] {
+  --ambient-glow:      rgba(77, 159, 255, 0.07);
+  --ambient-glow-soft: rgba(77, 159, 255, 0.04);
+
   --bg:       #f3f5f8;
   --surface:  #ffffff;
   --surface2: #eceff3;
@@ -201,7 +261,7 @@
 
 html,
 body {
-  background: var(--bg);
+  background-color: var(--bg);
   color: var(--text);
 
   font-family: var(--font-sans);
@@ -215,15 +275,15 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* subtle sleek texture */
+/* Animated ambient depth — two slow-drifting radial glows */
 body {
   background-image:
-    radial-gradient(circle at top left,
-      rgba(255,255,255,0.018),
-      transparent 22%),
-    radial-gradient(circle at bottom right,
-      rgba(99,207,255,0.03),
-      transparent 24%);
+    radial-gradient(ellipse 65% 55%, var(--ambient-glow), transparent 70%),
+    radial-gradient(ellipse 55% 45%, var(--ambient-glow-soft), transparent 65%);
+  background-size: 85% 75%, 70% 65%;
+  background-position: -15% -10%, 115% 115%;
+  background-repeat: no-repeat;
+  animation: ambientDrift 30s ease-in-out infinite alternate;
 }
 
 button {
@@ -303,4 +363,18 @@ select:focus {
   outline: 1px solid var(--accent);
   outline-offset: 2px;
   border-radius: var(--radius-xs);
+}
+
+/* ── Shared animation keyframes ──────────────────────── */
+
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes ambientDrift {
+  0%   { background-position: -15% -10%, 115% 115%; }
+  35%  { background-position:  -5%   8%, 108% 102%; }
+  70%  { background-position:   2%  -5%, 112% 110%; }
+  100% { background-position:  -8%  12%, 105% 118%; }
 }
