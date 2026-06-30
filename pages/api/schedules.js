@@ -1,16 +1,14 @@
-import fs from 'fs';
-import path from 'path';
-import { computeNextRun } from '../../lib/scheduleUtils';
-
-const FILE = path.join(process.cwd(), 'schedules.json');
+import { readSchedules, writeSchedules } from '../../lib/datastore.js';
+import { computeNextRun } from '../../lib/scheduleUtils.js';
+import { uidSchedule } from '../../lib/utils.js';
 
 function load() {
-  try { return JSON.parse(fs.readFileSync(FILE, 'utf8')); }
-  catch { return { schedules: [] }; }
+  const schedules = readSchedules();
+  return { schedules: Array.isArray(schedules) ? schedules : [] };
 }
 
 function save(data) {
-  fs.writeFileSync(FILE, JSON.stringify(data, null, 2));
+  writeSchedules(data.schedules || []);
 }
 
 export default function handler(req, res) {
@@ -23,7 +21,7 @@ export default function handler(req, res) {
   if (req.method === 'POST') {
     const body = req.body;
     const entry = {
-      id: 's' + Date.now(),
+      id: uidSchedule(),
       name: body.name || 'Untitled schedule',
       prompt: body.prompt || '',
       projectId: body.projectId || '',

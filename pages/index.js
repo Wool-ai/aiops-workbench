@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import Swimlane from '../components/Swimlane';
 import TaskPanel from '../components/TaskPanel';
 import BulkActionBar from '../components/BulkActionBar';
@@ -16,6 +17,8 @@ import MCPView from '../components/MCPView';
 import SkillsView from '../components/SkillsView';
 import AgentsView from '../components/AgentsView';
 import ArtifactsView from '../components/ArtifactsView';
+
+const FlowsView = dynamic(() => import('../components/FlowsView'), { ssr: false });
 import { ASSIGNEES, uid } from '../lib/data';
 import styles from '../styles/Home.module.css';
 
@@ -63,6 +66,10 @@ const VIEW_META = {
   artifacts: {
     label: 'Artifacts',
     icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+  },
+  flows: {
+    label: 'Flows',
+    icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="7" y1="5" x2="17" y2="5"/><line x1="5" y1="7" x2="5" y2="17"/><line x1="7" y1="19" x2="17" y2="19"/><line x1="17" y1="7" x2="7" y2="17"/></svg>,
   },
 };
 
@@ -659,6 +666,79 @@ export default function Home() {
     }
   }, [projects, applyAIResult, reloadFromDisk]);
 
+  const runTaskWithAI = useCallback((task, projectId) => {
+    return new Promise(async (resolve) => {
+      const project = projects.find(p => p.id === projectId);
+      if (!project) { resolve(null); return; }
+      const tempId = 'processing-' + Date.now();
+      setNotifications(prev => [{
+        id: tempId,
+        type: 'processing',
+        projectId,
+        projectName: project.name,
+        taskId: task.id,
+        taskName: task.name,
+        bucket: task.bucket || '',
+        message: '',
+        timestamp: new Date().toISOString(),
+        read: false,
+        thread: [],
+        streamText: '',
+        currentTool: null,
+        toolHistory: [],
+      }, ...prev]);
+      try {
+        const res = await fetch('/api/ai-stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task, projectId, projectName: project.name, bucket: task.bucket || '' }),
+        });
+        if (!res.ok) throw new Error('Stream request failed');
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const lines = buf.split('\n');
+          buf = lines.pop();
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.t === 'text') {
+                const isJsonResult = /^\s*\{"type"\s*:\s*"(completed|issue|human_input)"/.test(data.delta);
+                if (!isJsonResult) {
+                  setNotifications(prev => prev.map(n =>
+                    n.id === tempId ? { ...n, streamText: (n.streamText || '') + data.delta } : n
+                  ));
+                }
+              } else if (data.t === 'tool') {
+                setNotifications(prev => prev.map(n =>
+                  n.id === tempId ? { ...n, currentTool: data.name, toolHistory: [...(n.toolHistory || []), data.name] } : n
+                ));
+              } else if (data.t === 'done') {
+                const notif = data.notif;
+                clearTimeout(saveTimerRef.current);
+                await reloadFromDisk();
+                setNotifications(prev => [notif, ...prev.filter(n => n.id !== tempId)]);
+                applyAIResult(notif);
+                resolve(notif);
+                return;
+              }
+            } catch {}
+          }
+        }
+      } catch {
+        setNotifications(prev => prev.map(n =>
+          n.id === tempId ? { ...n, type: 'issue', message: 'AI processing failed.' } : n
+        ));
+        resolve(null);
+      }
+    });
+  }, [projects, applyAIResult, reloadFromDisk]);
+
   const runAllWithAI = useCallback(async (projectId) => {
     const project = projects.find(p => p.id === projectId);
     if (!project) return;
@@ -886,7 +966,7 @@ export default function Home() {
         )}
       </header>
 
-      <main key={activeView} className={`${styles.main} ${activeView === 'dashboard' ? styles.mainDashboard : activeView === 'scheduled' ? styles.mainScheduled : (activeView === 'queue' || activeView === 'reminders') ? styles.mainQueue : activeView === 'daily' ? styles.mainDaily : (activeView === 'mcp' || activeView === 'skills' || activeView === 'agents' || activeView === 'artifacts') ? styles.mainScheduled : ''}`}>
+      <main key={activeView} className={`${styles.main} ${activeView === 'dashboard' ? styles.mainDashboard : activeView === 'scheduled' ? styles.mainScheduled : (activeView === 'queue' || activeView === 'reminders') ? styles.mainQueue : activeView === 'daily' ? styles.mainDaily : (activeView === 'mcp' || activeView === 'skills' || activeView === 'agents' || activeView === 'artifacts' || activeView === 'flows') ? styles.mainScheduled : ''}`}>
         {isLoading ? (
           <div className={styles.skeletonDash}>
             <div className={styles.skeletonKpiRow}>
@@ -961,6 +1041,8 @@ export default function Home() {
           />
         ) : activeView === 'artifacts' ? (
           <ArtifactsView projects={projects} initialProjectId={artifactsInitialProject} />
+        ) : activeView === 'flows' ? (
+          <FlowsView projects={projects} notifications={notifications} onRunTaskWithAI={runTaskWithAI} />
         ) : activeView === 'agents' ? (
           <AgentsView projects={projects} />
         ) : activeView === 'skills' ? (

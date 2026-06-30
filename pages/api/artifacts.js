@@ -1,25 +1,12 @@
 import fs from 'fs';
 import path from 'path';
+import { readData, writeData, DATA_PATHS } from '../../lib/datastore.js';
+import { uid, slugify } from '../../lib/utils.js';
 
-const DATA_FILE = path.join(process.cwd(), 'data.json');
-const WORKSPACE  = path.join(process.cwd(), 'workspace');
+const DATA_FILE = DATA_PATHS.DATA_FILE;
+const WORKSPACE = path.join(process.cwd(), 'workspace');
 
-function uid() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-}
-
-function readData() {
-  try { return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); }
-  catch { return { projects: [] }; }
-}
-
-function writeData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-}
-
-function slugify(name) {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-}
+// slugify is now imported from lib/utils.js
 
 function artifactExt(type, lang) {
   if (type === 'json') return '.json';

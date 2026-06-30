@@ -1,0 +1,471 @@
+/* ── Panel shell ─────────────────────────────────── */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  height: 100%;
+  width: 300px;
+  flex-shrink: 0;
+}
+
+/* ── Header ──────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.header h3 {
+  margin: 0;
+  color: var(--text3);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.headerBadge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--radius-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.headerBadge[data-state='running'] {
+  background: color-mix(in srgb, var(--inprog-c) 12%, transparent);
+  color: var(--inprog-c);
+}
+
+.headerBadge[data-state='paused'] {
+  background: color-mix(in srgb, var(--review-c) 12%, transparent);
+  color: var(--review-c);
+}
+
+/* ── Run / Pause / Resume controls ──────────────── */
+
+.runControls {
+  display: flex;
+  gap: 6px;
+}
+
+.runBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  color: var(--btn-primary-text);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 0 8px var(--accent-glow);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.runBtn:hover:not(:disabled) { background: var(--accent-hover); }
+.runBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.pauseBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.pauseBtn:hover {
+  background: var(--surface4);
+  border-color: var(--review-c);
+  color: var(--review-c);
+}
+
+.resumeBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: color-mix(in srgb, var(--done-c) 10%, var(--surface2));
+  border: 1px solid color-mix(in srgb, var(--done-c) 30%, transparent);
+  color: var(--done-c);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.resumeBtn:hover {
+  background: color-mix(in srgb, var(--done-c) 18%, var(--surface2));
+}
+
+/* ── Progress bar ────────────────────────────────── */
+
+.progressBar {
+  position: relative;
+  height: 4px;
+  background: var(--surface3);
+  border-radius: 2px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.progressFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.progressLabel {
+  position: absolute;
+  right: 0;
+  top: 6px;
+  font-size: 9px;
+  color: var(--text3);
+  font-weight: 500;
+}
+
+/* ── Status bar ──────────────────────────────────── */
+
+.execStatusBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-top: 8px;
+}
+
+.execStatus {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+}
+
+.status_running  { background: color-mix(in srgb, var(--inprog-c) 12%, transparent); color: var(--inprog-c); }
+.status_completed { background: color-mix(in srgb, var(--done-c) 12%, transparent); color: var(--done-c); }
+.status_aborted  { background: color-mix(in srgb, var(--text3) 12%, transparent); color: var(--text3); }
+
+.execDuration {
+  font-size: 10px;
+  color: var(--text3);
+  font-weight: 500;
+}
+
+/* ── Node list ───────────────────────────────────── */
+
+.activeExecution {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+}
+
+.nodeList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.nodeBlock {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Node row ────────────────────────────────────── */
+
+.nodeRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.nodeRowRunning {
+  border-color: var(--accent) !important;
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface2)) !important;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0 !important;
+}
+
+.nodeRowDone {
+  opacity: 0.65;
+}
+
+.nodeRow:hover {
+  background: var(--surface3);
+  border-color: var(--border2);
+}
+
+/* ── Node status icon ────────────────────────────── */
+
+.nodeStatusIcon {
+  flex-shrink: 0;
+  width: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ns_pending { color: var(--text3); }
+.ns_running { color: var(--accent); }
+.ns_done    { color: var(--done-c); }
+.ns_skipped { color: var(--text3); opacity: 0.5; }
+
+.statusDot {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.spinIcon {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ── Node info ───────────────────────────────────── */
+
+.nodeInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.nodeName {
+  color: var(--text);
+  font-weight: 500;
+  font-size: 11.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.nodeTime {
+  font-size: 9.5px;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+/* ── Node controls ───────────────────────────────── */
+
+.nodeControls {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.ctrlBtn {
+  background: var(--surface3);
+  color: var(--text3);
+  border: 1px solid var(--border);
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: var(--radius-xs);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ctrlBtn:hover {
+  background: var(--surface4);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── Inline stream log ───────────────────────────── */
+
+.nodeStreamLog {
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--accent) 4%, var(--surface3));
+  border: 1px solid var(--accent);
+  border-top: none;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+
+/* ── Manual exec actions ─────────────────────────── */
+
+.execActions {
+  display: flex;
+  gap: 6px;
+}
+
+.actionBtn {
+  flex: 1;
+  background: var(--surface3);
+  color: var(--text3);
+  border: 1px solid var(--border);
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.actionBtn:hover:not(:disabled) {
+  background: var(--surface4);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.actionBtnDanger:hover:not(:disabled) {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.actionBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── History ─────────────────────────────────────── */
+
+.history {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.history h4 {
+  margin: 0;
+  color: var(--text3);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.execList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.execEntry {
+  padding: 7px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.execEntry:hover {
+  background: var(--surface3);
+  border-color: var(--border2);
+}
+
+.execEntryActive {
+  border-left: 2px solid var(--accent) !important;
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface2)) !important;
+}
+
+.execEntryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.execBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  font-size: 9.5px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.badge_completed { background: color-mix(in srgb, var(--done-c) 12%, transparent); color: var(--done-c); }
+.badge_running   { background: color-mix(in srgb, var(--inprog-c) 12%, transparent); color: var(--inprog-c); }
+.badge_aborted   { background: color-mix(in srgb, var(--text3) 12%, transparent); color: var(--text3); }
+
+.execTime {
+  color: var(--text3);
+  font-size: 10px;
+}
+
+.execEntryMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.execMiniProgress {
+  flex: 1;
+  height: 3px;
+  background: var(--surface4);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.execMiniBar {
+  height: 100%;
+  background: var(--done-c);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.execProgress {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 10px;
+  flex-shrink: 0;
+}

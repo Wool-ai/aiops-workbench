@@ -1,0 +1,220 @@
+/* ── Diagram container ───────────────────────────── */
+
+.container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+}
+
+/* Wire ReactFlow into the app's colour system */
+.container :global(.react-flow) {
+  background: var(--bg);
+}
+
+.container :global(.react-flow__background) {
+  color: var(--border);
+}
+
+.container :global(.react-flow__edge-path),
+.container :global(.react-flow__connection-path) {
+  stroke: var(--border2);
+  stroke-width: 1.5;
+}
+
+.container :global(.react-flow__edge.selected .react-flow__edge-path),
+.container :global(.react-flow__edge:hover .react-flow__edge-path) {
+  stroke: var(--accent);
+}
+
+.container :global(.react-flow__controls) {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.container :global(.react-flow__controls-button) {
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  color: var(--text2);
+  fill: var(--text2);
+}
+
+.container :global(.react-flow__controls-button:hover) {
+  background: var(--surface3);
+  color: var(--text);
+  fill: var(--text);
+}
+
+.container :global(.react-flow__minimap) {
+  background: var(--surface) !important;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+}
+
+.container :global(.react-flow__minimap-mask) {
+  fill: rgba(6, 7, 9, 0.6) !important;
+}
+
+.container :global(.react-flow__minimap-node) {
+  fill: var(--surface3) !important;
+  stroke: var(--border2) !important;
+}
+
+/* ── Empty state ─────────────────────────────────── */
+
+.emptyCanvas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  width: 100%;
+  height: 100%;
+  color: var(--text3);
+  font-size: 13px;
+}
+
+/* ── Toolbar overlay ─────────────────────────────── */
+
+.toolbar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+}
+
+.addTaskBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  color: var(--btn-primary-text);
+  border-radius: var(--radius-sm);
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 0 8px var(--accent-glow);
+  cursor: pointer;
+  transition: background var(--transition);
+  white-space: nowrap;
+}
+
+.addTaskBtn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.addTaskBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Task picker modal ───────────────────────────── */
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--modal-backdrop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  width: 400px;
+  max-height: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: var(--shadow-lg);
+}
+
+.modalContent h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.noTasksMsg {
+  color: var(--text3);
+  font-size: 12px;
+  margin: 0;
+  padding: 16px 0;
+  text-align: center;
+}
+
+.taskList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.taskOption {
+  padding: 10px 12px;
+  background: linear-gradient(160deg, var(--surface3) 0%, var(--surface2) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.taskOption:hover {
+  border-color: var(--accent);
+  background: linear-gradient(160deg, var(--surface4) 0%, var(--surface3) 100%);
+}
+
+.taskName {
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.taskCol {
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--radius-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.closeBtn {
+  align-self: flex-end;
+  background: transparent;
+  color: var(--text3);
+  border: 1px solid var(--border);
+  padding: 5px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+.closeBtn:hover {
+  background: var(--surface2);
+  color: var(--text2);
+}

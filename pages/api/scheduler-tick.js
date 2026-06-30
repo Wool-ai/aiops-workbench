@@ -1,16 +1,13 @@
-import fs from 'fs';
-import path from 'path';
-import { computeNextRun } from '../../lib/scheduleUtils';
-
-const FILE = path.join(process.cwd(), 'schedules.json');
+import { readSchedules, writeSchedules } from '../../lib/datastore.js';
+import { computeNextRun } from '../../lib/scheduleUtils.js';
 
 function load() {
-  try { return JSON.parse(fs.readFileSync(FILE, 'utf8')); }
-  catch { return { schedules: [] }; }
+  const schedules = readSchedules();
+  return { schedules: Array.isArray(schedules) ? schedules : [] };
 }
 
 function save(data) {
-  fs.writeFileSync(FILE, JSON.stringify(data, null, 2));
+  writeSchedules(data.schedules || []);
 }
 
 // Returns schedules that are due now, and advances their nextRun.

@@ -104,6 +104,18 @@ const Icons = {
       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
     </svg>
   ),
+  flows: (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="5" cy="5" r="2.5"/>
+      <circle cx="19" cy="5" r="2.5"/>
+      <circle cx="5" cy="19" r="2.5"/>
+      <circle cx="19" cy="19" r="2.5"/>
+      <line x1="7.5" y1="5" x2="16.5" y2="5"/>
+      <line x1="5" y1="7.5" x2="5" y2="16.5"/>
+      <line x1="7.5" y1="19" x2="16.5" y2="19"/>
+      <line x1="16.5" y1="7" x2="7.5" y2="17"/>
+    </svg>
+  ),
 };
 
 const VIEWS = [
@@ -113,6 +125,7 @@ const VIEWS = [
   { id: 'backlog',   label: 'Backlog',   icon: Icons.backlog,   group: 'workspace' },
   { id: 'daily',     label: 'Daily',     icon: Icons.daily,     group: 'workspace' },
   { id: 'artifacts', label: 'Artifacts', icon: Icons.artifacts, group: 'workspace' },
+  { id: 'flows',     label: 'Flows',     icon: Icons.flows,     group: 'workspace' },
   // ── Automation
   { id: 'queue',     label: 'AI Queue',  icon: Icons.queue,     group: 'auto' },
   { id: 'reminders', label: 'Reminders', icon: Icons.reminders, group: 'auto' },

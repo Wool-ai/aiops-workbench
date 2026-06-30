@@ -2,125 +2,26 @@ import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { readData, writeData, readAgents, DATA_PATHS } from '../../lib/datastore.js';
+import { runClaudeStream } from '../../lib/claude-executor.js';
+import { extractStructured, writeLine } from '../../lib/utils.js';
+import { loadWorkspaceContext } from '../../lib/workspace.js';
 
 const CLAUDE_BIN = process.env.CLAUDE_PATH || '/opt/homebrew/bin/claude';
 const LOG_DIR = '/Users/<user>/Desktop/ai/ai-logs';
-const TIMEOUT_MS = 300_000;
 const WORKSPACE_ROOT = path.join(process.cwd(), 'workspace');
 const MCP_CONFIG = path.join(process.cwd(), 'mcp-config.json');
-const AGENTS_FILE = path.join(process.cwd(), 'agents.json');
-const DATA_FILE = path.join(process.cwd(), 'data.json');
-
-const TEXT_EXTS = new Set([
-  '.md', '.txt', '.json', '.js', '.ts', '.jsx', '.tsx', '.py', '.sh',
-  '.yaml', '.yml', '.toml', '.csv', '.html', '.css', '.sql',
-  '.go', '.rs', '.java', '.rb', '.php', '.env.example', '.conf', '.ini',
-]);
-const MAX_INLINE_FILE_BYTES = 24 * 1024;
-const MAX_INLINE_TOTAL_BYTES = 96 * 1024;
-
-function readData() {
-  try { return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); }
-  catch { return { projects: [], notifications: [], dailyTasks: [], reminders: [] }; }
-}
-
-function writeData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-}
+const DATA_FILE = DATA_PATHS.DATA_FILE;
+const AGENTS_FILE = DATA_PATHS.AGENTS_FILE;
+const TIMEOUT_MS = 300000;
 
 function loadAgents(ids) {
   if (!ids?.length) return [];
-  try {
-    const all = JSON.parse(fs.readFileSync(AGENTS_FILE, 'utf8'));
-    return ids.map(id => all.find(a => a.id === id)).filter(Boolean);
-  } catch { return []; }
+  const all = readAgents();
+  return ids.map(id => all.find(a => a.id === id)).filter(Boolean);
 }
 
-function slugify(name) {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-}
-
-function readWorkspaceDir(dir, label, inlineBudgetRef) {
-  if (!fs.existsSync(dir)) return null;
-
-  const instructionsPath = path.join(dir, 'instructions.md');
-  const instructions = fs.existsSync(instructionsPath)
-    ? fs.readFileSync(instructionsPath, 'utf8').trim()
-    : null;
-
-  const entries = fs.readdirSync(dir)
-    .filter(f => f !== 'instructions.md' && f !== 'buckets' && !f.startsWith('.'));
-
-  if (!instructions && entries.length === 0) return null;
-
-  const inlined = [];
-  const refs = [];
-
-  for (const f of entries) {
-    const filePath = path.join(dir, f);
-    let stat;
-    try { stat = fs.statSync(filePath); } catch { continue; }
-    if (stat.isDirectory()) continue;
-
-    const ext = path.extname(f).toLowerCase();
-    const canInline =
-      TEXT_EXTS.has(ext) &&
-      stat.size <= MAX_INLINE_FILE_BYTES &&
-      inlineBudgetRef.used + stat.size <= MAX_INLINE_TOTAL_BYTES;
-
-    if (canInline) {
-      try {
-        const content = fs.readFileSync(filePath, 'utf8');
-        inlined.push({ name: f, filePath, content });
-        inlineBudgetRef.used += stat.size;
-      } catch {
-        refs.push({ name: f, filePath, size: stat.size });
-      }
-    } else {
-      refs.push({ name: f, filePath, size: stat.size });
-    }
-  }
-
-  let ctx = `\n--- ${label} ---`;
-  if (instructions) ctx += `\nInstructions:\n${instructions}`;
-
-  if (inlined.length > 0) {
-    ctx += `\n\nWorkspace files (contents available — no need to Read these separately):`;
-    for (const { name, filePath, content } of inlined) {
-      ctx += `\n\n<workspace_file path="${filePath}" name="${name}">\n${content}\n</workspace_file>`;
-    }
-  }
-
-  if (refs.length > 0) {
-    ctx += `\n\nAdditional workspace files (use the Read tool to access):`;
-    for (const { name, filePath, size } of refs) {
-      const kb = (size / 1024).toFixed(1);
-      ctx += `\n  ${filePath}  [${kb} KB]`;
-    }
-  }
-
-  ctx += `\n--- End ${label} ---`;
-  return ctx;
-}
-
-function loadWorkspaceContext(projectId, bucketName) {
-  if (!projectId || projectId === 'daily') return null;
-  const safeProject = projectId.replace(/[^a-zA-Z0-9_-]/g, '');
-  const projectDir = path.join(WORKSPACE_ROOT, safeProject);
-
-  const inlineBudgetRef = { used: 0 };
-  const parts = [];
-  const projectCtx = readWorkspaceDir(projectDir, 'Project Workspace', inlineBudgetRef);
-  if (projectCtx) parts.push(projectCtx);
-
-  if (bucketName) {
-    const bucketDir = path.join(projectDir, 'buckets', slugify(bucketName));
-    const bucketCtx = readWorkspaceDir(bucketDir, `Bucket Workspace: ${bucketName}`, inlineBudgetRef);
-    if (bucketCtx) parts.push(bucketCtx);
-  }
-
-  return parts.length > 0 ? '\n' + parts.join('\n') + '\n' : null;
-}
+// Helper functions now imported from lib/workspace.js and lib/utils.js
 
 const DEFAULT_ALLOWED_TOOLS = [
   'Bash', 'Read', 'Write', 'Edit', 'Glob', 'Grep', 'LS',
@@ -147,22 +48,7 @@ function simulate() {
   return { type, message: opts[Math.floor(Math.random() * opts.length)] };
 }
 
-function writeLine(stream, line = '') {
-  stream.write(line + '\n');
-}
-
-function extractStructured(text) {
-  const match = text.match(/\{[^{}]*"type"\s*:\s*"(completed|issue|human_input)"[^{}]*\}/s);
-  if (match) {
-    try { return JSON.parse(match[0]); } catch {}
-  }
-  const typeMatch = text.match(/"type"\s*:\s*"(completed|issue|human_input)"/);
-  const msgMatch = text.match(/"message"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-  if (typeMatch && msgMatch) {
-    return { type: typeMatch[1], message: msgMatch[1].replace(/\\n/g, ' ') };
-  }
-  return null;
-}
+// writeLine and extractStructured are now imported from lib/utils.js
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
@@ -170,6 +56,7 @@ export default async function handler(req, res) {
   const {
     task, projectId, projectName, bucket,
     allowedTools: bodyAllowedTools, deniedTools: bodyDeniedTools, instructions, agentIds,
+    preventSubagents = false,
   } = req.body;
 
   // SSE headers
@@ -266,6 +153,15 @@ Task: "${task.name}"
 ${task.desc ? `Description: "${task.desc}"` : ''}
 Current status: ${task.col}
 ${workspaceCtx || ''}${instructions ? `\n\nAdditional instructions:\n${instructions}` : ''}
+
+IMPORTANT: When generating outputs (code, reports, plans, configs, analysis, etc.), use the mcp__aiops__create_artifact tool to save them properly in the project workspace. This makes outputs:
+- Persistent and organized (stored in ${bucket ? `bucket "${bucket}"` : 'project workspace'})
+- Visible in the Artifacts view
+- Properly tracked and versioned
+- Available for review and future reference
+
+Do NOT try to use Bash, Write tool, or file operations directly for important outputs — use create_artifact instead.
+
 USE YOUR TOOLS to complete this task now. Do the actual work — do not just describe what you would do.
 
 After completing the work (or if you hit a blocker or need input), write a single JSON line as your final output — nothing else after it:
@@ -300,11 +196,14 @@ After completing the work (or if you hit a blocker or need input), write a singl
   let allAllowedTools = [...new Set([...baseTools, ...mcpWildcards])];
 
   // Apply denied tools filter
-  if (bodyDeniedTools?.length > 0) {
+  if (bodyDeniedTools?.length > 0 || preventSubagents) {
+    const deniedSet = new Set(bodyDeniedTools || []);
+    if (preventSubagents) deniedSet.add('Agent');
+
     allAllowedTools = allAllowedTools.filter(tool => {
-      if (bodyDeniedTools.includes(tool)) return false;
+      if (deniedSet.has(tool)) return false;
       // Handle wildcard denials (e.g., mcp__server__* denies mcp__server__specific_tool)
-      for (const denied of bodyDeniedTools) {
+      for (const denied of deniedSet) {
         if (denied.endsWith('__*') && tool.match(new RegExp(`^${denied.slice(0, -1)}.+$`))) {
           return false;
         }
@@ -316,6 +215,9 @@ After completing the work (or if you hit a blocker or need input), write a singl
   writeLine(logStream, `Allowed tools: ${allAllowedTools.join(', ')}`);
   if (bodyDeniedTools?.length > 0) {
     writeLine(logStream, `Denied tools: ${bodyDeniedTools.join(', ')}`);
+  }
+  if (preventSubagents) {
+    writeLine(logStream, 'Subagents disabled (Agent tool blocked)');
   }
   writeLine(logStream);
 
@@ -466,8 +368,18 @@ After completing the work (or if you hit a blocker or need input), write a singl
   writeLine(logStream, '=== RESULT ===');
   writeLine(logStream, `Type:    ${type}`);
   writeLine(logStream, `Message: ${message}`);
+  if (newArtifacts.length > 0) {
+    writeLine(logStream, `Artifacts: ${newArtifacts.map(a => `${a.name} (${a.type})`).join(', ')}`);
+  }
   if (simulated) writeLine(logStream, '(simulated — Claude Code not available)');
   logStream.end();
+
+  // Enhance message with artifact info
+  let enhancedMessage = message;
+  if (newArtifacts.length > 0) {
+    const artifactList = newArtifacts.map(a => `• ${a.name} (${a.type})`).join('\n');
+    enhancedMessage = `${message}\n\n📦 Artifacts created:\n${artifactList}`;
+  }
 
   send({
     t: 'done',
@@ -479,7 +391,7 @@ After completing the work (or if you hit a blocker or need input), write a singl
       taskId: task.id,
       taskName: task.name,
       bucket: bucket || '',
-      message,
+      message: enhancedMessage,
       deniedOperations: [],
       timestamp,
       read: false,

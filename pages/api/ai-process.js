@@ -1,235 +1,22 @@
-import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { readData, writeData, readAgents, DATA_PATHS } from '../../lib/datastore.js';
+import { runClaudeProcess } from '../../lib/claude-executor.js';
+import { extractStructured, writeLine } from '../../lib/utils.js';
+import { loadWorkspaceContext } from '../../lib/workspace.js';
 
 const CLAUDE_BIN = process.env.CLAUDE_PATH || '/opt/homebrew/bin/claude';
 const LOG_DIR = '/Users/<user>/Desktop/ai/ai-logs';
-const TIMEOUT_MS = 300_000;
-
 const WORKSPACE_ROOT = path.join(process.cwd(), 'workspace');
 const MCP_CONFIG = path.join(process.cwd(), 'mcp-config.json');
-const AGENTS_FILE = path.join(process.cwd(), 'agents.json');
-const DATA_FILE = path.join(process.cwd(), 'data.json');
-
-// Text extensions whose contents get injected inline into the prompt
-const TEXT_EXTS = new Set([
-  '.md',
-  '.txt',
-  '.json',
-  '.js',
-  '.ts',
-  '.jsx',
-  '.tsx',
-  '.py',
-  '.sh',
-  '.yaml',
-  '.yml',
-  '.toml',
-  '.csv',
-  '.html',
-  '.css',
-  '.sql',
-  '.go',
-  '.rs',
-  '.java',
-  '.rb',
-  '.php',
-  '.env.example',
-  '.conf',
-  '.ini',
-]);
-
-const MAX_INLINE_FILE_BYTES = 24 * 1024;
-const MAX_INLINE_TOTAL_BYTES = 96 * 1024;
-
-function readData() {
-  try {
-    return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-  } catch {
-    return {
-      projects: [],
-      notifications: [],
-      dailyTasks: [],
-      reminders: [],
-    };
-  }
-}
-
-function writeData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-}
+const DATA_FILE = DATA_PATHS.DATA_FILE;
+const AGENTS_FILE = DATA_PATHS.AGENTS_FILE;
 
 function loadAgents(ids) {
   if (!ids?.length) return [];
-
-  try {
-    const all = JSON.parse(fs.readFileSync(AGENTS_FILE, 'utf8'));
-
-    return ids
-      .map(id => all.find(a => a.id === id))
-      .filter(Boolean);
-  } catch {
-    return [];
-  }
-}
-
-function slugify(name) {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
-}
-
-function readWorkspaceDir(dir, label, inlineBudgetRef) {
-  if (!fs.existsSync(dir)) return null;
-
-  const instructionsPath = path.join(dir, 'instructions.md');
-
-  const instructions = fs.existsSync(instructionsPath)
-    ? fs.readFileSync(instructionsPath, 'utf8').trim()
-    : null;
-
-  const entries = fs.readdirSync(dir)
-    .filter(
-      f =>
-        f !== 'instructions.md' &&
-        f !== 'buckets' &&
-        !f.startsWith('.')
-    );
-
-  if (!instructions && entries.length === 0) {
-    return null;
-  }
-
-  const inlined = [];
-  const refs = [];
-
-  for (const f of entries) {
-    const filePath = path.join(dir, f);
-
-    let stat;
-
-    try {
-      stat = fs.statSync(filePath);
-    } catch {
-      continue;
-    }
-
-    if (stat.isDirectory()) continue;
-
-    const ext = path.extname(f).toLowerCase();
-
-    const canInline =
-      TEXT_EXTS.has(ext) &&
-      stat.size <= MAX_INLINE_FILE_BYTES &&
-      inlineBudgetRef.used + stat.size <= MAX_INLINE_TOTAL_BYTES;
-
-    if (canInline) {
-      try {
-        const content = fs.readFileSync(filePath, 'utf8');
-
-        inlined.push({
-          name: f,
-          filePath,
-          content,
-        });
-
-        inlineBudgetRef.used += stat.size;
-      } catch {
-        refs.push({
-          name: f,
-          filePath,
-          size: stat.size,
-        });
-      }
-    } else {
-      refs.push({
-        name: f,
-        filePath,
-        size: stat.size,
-      });
-    }
-  }
-
-  let ctx = `\n--- ${label} ---`;
-
-  if (instructions) {
-    ctx += `\nInstructions:\n${instructions}`;
-  }
-
-  if (inlined.length > 0) {
-    ctx += `\n\nWorkspace files (contents available — no need to Read these separately):`;
-
-    for (const { name, filePath, content } of inlined) {
-      ctx += `\n\n<workspace_file path="${filePath}" name="${name}">\n${content}\n</workspace_file>`;
-    }
-  }
-
-  if (refs.length > 0) {
-    ctx += `\n\nAdditional workspace files (use the Read tool to access):`;
-
-    for (const { filePath, size } of refs) {
-      const kb = (size / 1024).toFixed(1);
-      ctx += `\n  ${filePath}  [${kb} KB]`;
-    }
-  }
-
-  ctx += `\n--- End ${label} ---`;
-
-  return ctx;
-}
-
-function loadWorkspaceContext(projectId, bucketName) {
-  if (!projectId || projectId === 'daily') {
-    return null;
-  }
-
-  const safeProject = projectId.replace(
-    /[^a-zA-Z0-9_-]/g,
-    ''
-  );
-
-  const projectDir = path.join(
-    WORKSPACE_ROOT,
-    safeProject
-  );
-
-  const inlineBudgetRef = { used: 0 };
-
-  const parts = [];
-
-  const projectCtx = readWorkspaceDir(
-    projectDir,
-    'Project Workspace',
-    inlineBudgetRef
-  );
-
-  if (projectCtx) {
-    parts.push(projectCtx);
-  }
-
-  if (bucketName) {
-    const bucketDir = path.join(
-      projectDir,
-      'buckets',
-      slugify(bucketName)
-    );
-
-    const bucketCtx = readWorkspaceDir(
-      bucketDir,
-      `Bucket Workspace: ${bucketName}`,
-      inlineBudgetRef
-    );
-
-    if (bucketCtx) {
-      parts.push(bucketCtx);
-    }
-  }
-
-  return parts.length > 0
-    ? '\n' + parts.join('\n') + '\n'
-    : null;
+  const all = readAgents();
+  return ids.map(id => all.find(a => a.id === id)).filter(Boolean);
 }
 
 // Tools pre-authorized on every run
@@ -280,222 +67,8 @@ function simulate() {
   };
 }
 
-function writeLine(stream, line = '') {
-  stream.write(line + '\n');
-}
-function runClaude(
-  prompt,
-  logStream,
-  allowedTools = [],
-  model = null
-) {
-  return new Promise((resolve, reject) => {
-    let stdout = '';
-    let stderr = '';
-
-    const startMs = Date.now();
-
-    // Write prompt to a temp file so we can pass it as a real file fd for
-    // stdin. This is equivalent to shell's `< file` redirection and avoids
-    // the 3-second pipe-timing race in claude --print mode: the file data
-    // is already on disk when Claude opens fd 0, so the read returns
-    // immediately with no polling window.
-    const tempFile = path.join(
-      os.tmpdir(),
-      `aiops-${Date.now()}-${Math.random().toString(36).slice(2)}.txt`
-    );
-
-    let stdinFd;
-    try {
-      fs.writeFileSync(tempFile, prompt, 'utf8');
-      stdinFd = fs.openSync(tempFile, 'r');
-    } catch (e) {
-      reject(e);
-      return;
-    }
-
-    function cleanup() {
-      try { fs.unlinkSync(tempFile); } catch {}
-    }
-
-    const args = [
-      '--print',
-      '--output-format',
-      'json',
-    ];
-
-    if (model) {
-      args.push('--model', model);
-    }
-
-    if (allowedTools.length > 0) {
-      args.push(
-        '--allowedTools',
-        allowedTools.join(',')
-      );
-    }
-
-    if (fs.existsSync(MCP_CONFIG)) {
-      args.push('--mcp-config', MCP_CONFIG);
-    }
-
-    const proc = spawn(CLAUDE_BIN, args, {
-      env: { ...process.env },
-      stdio: [stdinFd, 'pipe', 'pipe'],
-    });
-
-    // Parent closes its copy — child already inherited its own via fork/dup2
-    try { fs.closeSync(stdinFd); } catch {}
-
-    const timer = setTimeout(() => {
-      proc.kill('SIGTERM');
-      cleanup();
-      writeLine(
-        logStream,
-        '\n[TIMEOUT] Claude Code exceeded 300s limit.'
-      );
-
-      reject(new Error('Claude Code timed out'));
-    }, TIMEOUT_MS);
-
-    proc.stdout.on('data', d => {
-      stdout += d.toString();
-    });
-
-    proc.stderr.on('data', d => {
-      stderr += d.toString();
-    });
-
-    proc.on('close', code => {
-      clearTimeout(timer);
-      cleanup();
-
-      const durationMs = Date.now() - startMs;
-
-      writeLine(logStream, '=== RAW OUTPUT ===');
-
-      try {
-        const parsed = JSON.parse(stdout);
-
-        writeLine(
-          logStream,
-          JSON.stringify(parsed, null, 2)
-        );
-
-        writeLine(logStream);
-
-        if (stderr.trim()) {
-          writeLine(logStream, '=== STDERR ===');
-          writeLine(logStream, stderr.trim());
-          writeLine(logStream);
-        }
-
-        writeLine(
-          logStream,
-          `Exit Code: ${code}`
-        );
-
-        writeLine(
-          logStream,
-          `Duration: ${(durationMs / 1000).toFixed(2)}s`
-        );
-
-        if (parsed.total_cost_usd != null) {
-          writeLine(
-            logStream,
-            `Cost: $${parsed.total_cost_usd.toFixed(6)}`
-          );
-        }
-
-        if (parsed.is_error) {
-          reject(
-            new Error(
-              parsed.result ||
-                'Claude returned an error'
-            )
-          );
-        } else {
-          resolve({
-            text: parsed.result || '',
-            permissionDenials:
-              parsed.permission_denials || [],
-          });
-        }
-      } catch {
-        writeLine(logStream, stdout);
-
-        if (stderr.trim()) {
-          writeLine(logStream);
-          writeLine(logStream, '=== STDERR ===');
-          writeLine(logStream, stderr.trim());
-        }
-
-        writeLine(
-          logStream,
-          `Exit Code: ${code}`
-        );
-
-        writeLine(
-          logStream,
-          `Duration: ${(durationMs / 1000).toFixed(2)}s`
-        );
-
-        if (stdout.trim()) {
-          resolve({
-            text: stdout.trim(),
-            permissionDenials: [],
-          });
-        } else {
-          reject(
-            new Error(
-              stderr.trim() || 'No output from Claude'
-            )
-          );
-        }
-      }
-    });
-
-    proc.on('error', e => {
-      clearTimeout(timer);
-      cleanup();
-      writeLine(
-        logStream,
-        `[ERROR] Failed to spawn Claude: ${e.message}`
-      );
-
-      reject(e);
-    });
-  });
-}
-
-function extractStructured(text) {
-  const match = text.match(
-    /\{[^{}]*"type"\s*:\s*"(completed|issue|human_input)"[^{}]*\}/s
-  );
-
-  if (match) {
-    try {
-      return JSON.parse(match[0]);
-    } catch {}
-  }
-
-  const typeMatch = text.match(
-    /"type"\s*:\s*"(completed|issue|human_input)"/
-  );
-
-  const msgMatch = text.match(
-    /"message"\s*:\s*"((?:[^"\\]|\\.)*)"/
-  );
-
-  if (typeMatch && msgMatch) {
-    return {
-      type: typeMatch[1],
-      message: msgMatch[1].replace(/\\n/g, ' '),
-    };
-  }
-
-  return null;
-}
+// writeLine and extractStructured are now imported from lib/utils.js
+// runClaudeProcess is now imported from lib/claude-executor.js
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -510,8 +83,10 @@ export default async function handler(req, res) {
     replyContext,
     approvedContext,
     allowedTools: bodyAllowedTools,
+    deniedTools: bodyDeniedTools,
     instructions,
     agentIds,
+    preventSubagents = false,
   } = req.body;
 
   const notifId =
@@ -575,6 +150,14 @@ ${
     : ''
 }
 
+IMPORTANT: When generating outputs (code, reports, plans, configs, analysis, etc.), use the mcp__aiops__create_artifact tool to save them properly in the project workspace. This makes outputs:
+- Persistent and organized (stored in ${bucket ? `bucket "${bucket}"` : 'project workspace'})
+- Visible in the Artifacts view
+- Properly tracked and versioned
+- Available for review and future reference
+
+Do NOT try to use Bash, Write tool, or file operations directly for important outputs — use create_artifact instead.
+
 USE YOUR TOOLS to complete this task now.
 
 Return ONLY valid JSON:
@@ -602,6 +185,10 @@ OR
 
   const approvedTools =
     approvedContext?.approvedTools || [];
+
+  // Capture state before execution for artifact detection
+  const dataBefore = readData();
+  const projectBefore = dataBefore.projects?.find(p => p.id === projectId);
 
   let agentTools = [];
   let agentModel = null;
@@ -646,7 +233,7 @@ OR
     } catch {}
   }
 
-  const allAllowedTools = [
+  let allAllowedTools = [
     ...new Set([
       ...baseTools,
       ...approvedTools,
@@ -654,21 +241,45 @@ OR
     ]),
   ];
 
+  // Apply denied tools filter
+  if (bodyDeniedTools?.length > 0 || preventSubagents) {
+    const deniedSet = new Set(bodyDeniedTools || []);
+    if (preventSubagents) deniedSet.add('Agent');
+
+    allAllowedTools = allAllowedTools.filter(tool => {
+      if (deniedSet.has(tool)) return false;
+      // Handle wildcard denials
+      for (const denied of deniedSet) {
+        if (denied.endsWith('__*') && tool.match(new RegExp(`^${denied.slice(0, -1)}.+$`))) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }
+
   writeLine(
     logStream,
     `Allowed tools: ${allAllowedTools.join(', ')}`
   );
+  if (bodyDeniedTools?.length > 0) {
+    writeLine(logStream, `Denied tools: ${bodyDeniedTools.join(', ')}`);
+  }
+  if (preventSubagents) {
+    writeLine(logStream, 'Subagents disabled (Agent tool blocked)');
+  }
 
   try {
     const {
       text: raw,
       permissionDenials,
-    } = await runClaude(
+    } = await runClaudeProcess({
       prompt,
       logStream,
-      allAllowedTools,
-      agentModel
-    );
+      allowedTools: allAllowedTools,
+      model: agentModel,
+      mcp_config: MCP_CONFIG,
+    });
 
     rawOutput = raw;
 
@@ -716,10 +327,33 @@ OR
     ({ type, message } = simulate());
   }
 
+  // Detect new artifacts created
+  let newArtifacts = [];
+  if (projectId && projectId !== 'daily') {
+    try {
+      const dataAfter = readData();
+      const projectAfter = dataAfter.projects?.find(p => p.id === projectId);
+      // Store data before execution at the start for comparison
+      const beforeIds = new Set((projectBefore?.artifacts || []).map(a => a.id));
+      newArtifacts = (projectAfter?.artifacts || [])
+        .filter(a => !beforeIds.has(a.id))
+        .map(a => ({ id: a.id, name: a.name, type: a.type || 'text', lang: a.lang || '', bucket: a.bucket || '' }));
+
+      if (newArtifacts.length > 0) {
+        writeLine(logStream, `New artifact(s) created: ${newArtifacts.map(a => a.name).join(', ')}`);
+      }
+    } catch (e) {
+      writeLine(logStream, `[Note] Could not detect artifacts: ${e.message}`);
+    }
+  }
+
   writeLine(logStream);
   writeLine(logStream, '=== RESULT ===');
   writeLine(logStream, `Type: ${type}`);
   writeLine(logStream, `Message: ${message}`);
+  if (newArtifacts.length > 0) {
+    writeLine(logStream, `Artifacts: ${newArtifacts.map(a => `${a.name} (${a.type})`).join(', ')}`);
+  }
 
   if (simulated) {
     writeLine(
@@ -730,6 +364,13 @@ OR
 
   logStream.end();
 
+  // Enhance message with artifact info
+  let enhancedMessage = message;
+  if (newArtifacts.length > 0) {
+    const artifactList = newArtifacts.map(a => `• ${a.name} (${a.type})`).join('\n');
+    enhancedMessage = `${message}\n\n📦 Artifacts created:\n${artifactList}`;
+  }
+
   res.status(200).json({
     id: notifId,
     type,
@@ -738,11 +379,12 @@ OR
     taskId: task.id,
     taskName: task.name,
     bucket: bucket || '',
-    message,
+    message: enhancedMessage,
     deniedOperations,
     timestamp,
     read: false,
     logFile,
+    ...(newArtifacts.length > 0 ? { artifactsAdded: true, newArtifacts } : {}),
   });
 }
 

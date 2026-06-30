@@ -1,30 +1,18 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { readFileSync, writeFileSync, mkdirSync, unlinkSync, existsSync } from 'fs';
+import { mkdirSync, unlinkSync, existsSync, readFileSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { readData as read, writeData as write } from './lib/datastore.js';
+import { uid, slugify } from './lib/utils.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_FILE = join(__dirname, 'data.json');
 
 const PROJECT_COLORS = [
   '#7c6df0', '#4ecb8a', '#f0c060', '#6aabff',
   '#ff7b8a', '#f0855a', '#5dcaa5', '#c084fc',
 ];
-
-function uid() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-}
-
-function read() {
-  try { return JSON.parse(readFileSync(DATA_FILE, 'utf8')); }
-  catch { return { projects: [], notifications: [], dailyTasks: [], reminders: [] }; }
-}
-
-function write(data) {
-  writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-}
 
 function text(str) {
   return { content: [{ type: 'text', text: String(str) }] };
@@ -565,9 +553,7 @@ server.tool(
 
 const WORKSPACE_ROOT = join(__dirname, 'workspace');
 
-function slugify(name) {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-}
+// slugify is now imported from lib/utils.js
 
 function artifactExt(type, lang) {
   if (type === 'json') return '.json';
