@@ -592,18 +592,37 @@ export default function Home() {
                 ));
               }
             } else if (data.t === 'tool') {
+              const FILE_OP = { Write: 'created', Edit: 'edited' };
+              const op = FILE_OP[data.name];
+              const path = data.input?.file_path;
+              const change = op && path
+                ? {
+                    op,
+                    path,
+                    content: data.input?.content,
+                    oldString: data.input?.old_string,
+                    newString: data.input?.new_string,
+                  }
+                : null;
               setNotifications(prev => prev.map(n =>
                 n.id === tempId ? {
                   ...n,
                   currentTool: data.name,
                   toolHistory: [...(n.toolHistory || []), data.name],
+                  fileChanges: change
+                    ? [...(n.fileChanges || []), change]
+                    : (n.fileChanges || []),
                 } : n
               ));
             } else if (data.t === 'done') {
               const notif = data.notif;
               clearTimeout(saveTimerRef.current);
               await reloadFromDisk();
-              setNotifications(prev => [notif, ...prev.filter(n => n.id !== tempId)]);
+              setNotifications(prev => {
+                const placeholder = prev.find(n => n.id === tempId);
+                const fileChanges = placeholder?.fileChanges ?? [];
+                return [{ ...notif, fileChanges }, ...prev.filter(n => n.id !== tempId)];
+              });
               applyAIResult(notif);
             }
           } catch {}

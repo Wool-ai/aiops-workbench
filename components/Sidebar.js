@@ -3,7 +3,10 @@ import styles from '../styles/Sidebar.module.css';
 
 const THEMES = [
   { id: 'blue',  label: 'Blue',      swatch: '#2cb7d3' },
+  { id: 'purple', label: 'Purple',   swatch: '#c084fc' },
   { id: 'green', label: 'Green',     swatch: '#4fffb0' },
+  { id: 'yellow', label: 'Yellow',   swatch: '#fbbf24' },
+  { id: 'orange', label: 'Orange',   swatch: '#ff8c42' },
   { id: 'dark',  label: 'Dark',      swatch: '#9898b8' },
   { id: 'white', label: 'Light',     swatch: '#2563eb' },
 ];

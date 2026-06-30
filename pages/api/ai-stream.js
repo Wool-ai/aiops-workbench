@@ -364,7 +364,7 @@ After completing the work (or if you hit a blocker or need input), write a singl
                 accumulatedText += block.text;
                 send({ t: 'text', delta: block.text });
               } else if (block.type === 'tool_use' && block.name) {
-                send({ t: 'tool', name: block.name });
+                send({ t: 'tool', name: block.name, input: block.input ?? {} });
               }
             }
           }
@@ -375,7 +375,7 @@ After completing the work (or if you hit a blocker or need input), write a singl
             send({ t: 'text', delta: ev.text });
           }
           if (ev.type === 'tool_use' && ev.name) {
-            send({ t: 'tool', name: ev.name });
+            send({ t: 'tool', name: ev.name, input: ev.input ?? {} });
           }
 
           // Final result event — store separately for structured output parsing

@@ -528,6 +528,110 @@ const ARTIFACT_TYPE_COLOR = {
   json:     { color: 'var(--artifact-json-c)', bg: 'var(--artifact-json-bg)'  },
 };
 
+function simpleDiff(oldText, newText) {
+  const oldLines = oldText?.split('\n') || [];
+  const newLines = newText?.split('\n') || [];
+  const result = [];
+
+  // Find common prefix
+  let i = 0;
+  while (i < oldLines.length && i < newLines.length && oldLines[i] === newLines[i]) {
+    result.push({ type: 'unchanged', line: oldLines[i] });
+    i++;
+  }
+
+  // Find common suffix
+  let j = oldLines.length - 1;
+  let k = newLines.length - 1;
+  const suffix = [];
+  while (j >= i && k >= i && oldLines[j] === newLines[k]) {
+    suffix.unshift({ type: 'unchanged', line: oldLines[j] });
+    j--;
+    k--;
+  }
+
+  // Process middle section
+  const oldSet = new Set(oldLines.slice(i, j + 1));
+  const newSet = new Set(newLines.slice(i, k + 1));
+
+  for (let idx = i; idx <= j; idx++) {
+    if (!newSet.has(oldLines[idx])) {
+      result.push({ type: 'removed', line: oldLines[idx] });
+    }
+  }
+  for (let idx = i; idx <= k; idx++) {
+    if (!oldSet.has(newLines[idx])) {
+      result.push({ type: 'added', line: newLines[idx] });
+    }
+  }
+
+  result.push(...suffix);
+  return result;
+}
+
+function FileChangesSection({ changes }) {
+  const [expanded, setExpanded] = useState({});
+  const deduped = Object.values(
+    changes.reduce((acc, c) => { acc[c.path] = c; return acc; }, {})
+  );
+
+  const toggleExpanded = (path) => {
+    setExpanded(prev => ({ ...prev, [path]: !prev[path] }));
+  };
+
+  return (
+    <div className={styles.fileChanges}>
+      <span className={styles.fileChangesLabel}>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+        Files
+      </span>
+      {deduped.map(({ op, path, content, oldString, newString }) => (
+        <div key={path} className={styles.fileChangeItem}>
+          <button
+            className={styles.fileChangeHeader}
+            onClick={() => toggleExpanded(path)}
+          >
+            <span className={styles[`fileOp_${op}`]}>{op}</span>
+            <span className={styles.filePath} title={path}>
+              {path.split('/').pop()}
+            </span>
+            <span className={styles.expandIcon}>
+              {expanded[path] ? '−' : '+'}
+            </span>
+          </button>
+          {expanded[path] && (
+            <div className={styles.fileChangeContent}>
+              {op === 'created' && content && (
+                <div className={styles.fileCreated}>
+                  <pre className={styles.fileContentPre}>{content}</pre>
+                </div>
+              )}
+              {op === 'edited' && (oldString || newString) && (
+                <div className={styles.unifiedDiff}>
+                  {simpleDiff(oldString, newString).map((line, idx) => (
+                    <div
+                      key={idx}
+                      className={`${styles.diffLine} ${styles[`diffLine_${line.type}`]}`}
+                    >
+                      <span className={styles.diffLinePrefix}>
+                        {line.type === 'added' ? '+' : line.type === 'removed' ? '−' : ' '}
+                      </span>
+                      <span className={styles.diffLineContent}>{line.line}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function NotifCard({ notif, onMarkRead, onDismiss, onReply, onApproveRetry, onOpenTask, onOpenWorkspace, onNavigateArtifacts }) {
   const [replyText, setReplyText] = useState('');
   const [replying, setReplying] = useState(false);
@@ -726,6 +830,11 @@ function NotifCard({ notif, onMarkRead, onDismiss, onReply, onApproveRetry, onOp
             );
           })}
         </div>
+      )}
+
+      {/* File changes — shown when Write/Edit tools were used */}
+      {notif.fileChanges?.length > 0 && (
+        <FileChangesSection changes={notif.fileChanges} />
       )}
 
       {/* Execution log */}

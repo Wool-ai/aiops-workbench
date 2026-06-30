@@ -162,6 +162,72 @@
   --btn-primary-text: #07100d;
 }
 
+/* ── Orange Theme ────────────────────────────────────── */
+[data-theme="orange"] {
+  --ambient-glow:      rgba(255, 140, 66, 0.05);
+  --ambient-glow-soft: rgba(255, 140, 66, 0.025);
+
+  --accent:             #ff8c42;
+  --accent-hover:       #ffa058;
+  --accent-glow:        rgba(255, 140, 66, 0.08);
+  --accent-glow-strong: rgba(255, 140, 66, 0.14);
+
+  --gradient-accent:
+    linear-gradient(135deg, #ff8c42 0%, #ffb380 100%);
+
+  --inprog-bg: rgba(255, 140, 66, 0.10);
+  --inprog-c:  #ff8c42;
+
+  --todo-c:  #b8906b;
+  --todo-bg: rgba(184, 144, 107, 0.10);
+
+  --btn-primary-text: #110801;
+}
+
+/* ── Yellow Theme ───────────────────────────────────── */
+[data-theme="yellow"] {
+  --ambient-glow:      rgba(251, 191, 36, 0.05);
+  --ambient-glow-soft: rgba(251, 191, 36, 0.025);
+
+  --accent:             #fbbf24;
+  --accent-hover:       #fcd34d;
+  --accent-glow:        rgba(251, 191, 36, 0.08);
+  --accent-glow-strong: rgba(251, 191, 36, 0.14);
+
+  --gradient-accent:
+    linear-gradient(135deg, #fbbf24 0%, #fcd34d 100%);
+
+  --inprog-bg: rgba(251, 191, 36, 0.10);
+  --inprog-c:  #fbbf24;
+
+  --todo-c:  #b89f64;
+  --todo-bg: rgba(184, 159, 100, 0.10);
+
+  --btn-primary-text: #1a1410;
+}
+
+/* ── Purple Theme ────────────────────────────────────── */
+[data-theme="purple"] {
+  --ambient-glow:      rgba(192, 132, 252, 0.05);
+  --ambient-glow-soft: rgba(192, 132, 252, 0.025);
+
+  --accent:             #c084fc;
+  --accent-hover:       #d4a3f7;
+  --accent-glow:        rgba(192, 132, 252, 0.08);
+  --accent-glow-strong: rgba(192, 132, 252, 0.14);
+
+  --gradient-accent:
+    linear-gradient(135deg, #c084fc 0%, #d4a3f7 100%);
+
+  --inprog-bg: rgba(192, 132, 252, 0.10);
+  --inprog-c:  #c084fc;
+
+  --todo-c:  #9b7ba8;
+  --todo-bg: rgba(155, 123, 168, 0.10);
+
+  --btn-primary-text: #140f1a;
+}
+
 /* ── Mono Dark Theme ─────────────────────────────────── */
 [data-theme="dark"] {
   --ambient-glow:      rgba(217, 221, 227, 0.04);
